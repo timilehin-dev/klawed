@@ -88,6 +88,10 @@ r=$(post "${H_AUTH[@]}" -- "$(mk "$CORE" '{"region":"mars"}')")
 chk "bad region" "400|{\"error\":\"bad_region\"}" "$r"; echo "       got: $r"
 r=$(post "${H_AUTH[@]}" -- "$(mk "$CORE" '{"link":"http://insecure.example.com/x"}')")
 chk "non-https link -> bad_link" "400|{\"error\":\"bad_link\"}" "$r"; echo "       got: $r"
+r=$(post "${H_AUTH[@]}" -- "$(mk "$CORE" '{"link":"https:///no-host-at-all"}')")
+chk "host-less link -> bad_link (the WHATWG triple-slash trap)" "400|{\"error\":\"bad_link\"}" "$r"; echo "       got: $r"
+r=$(post "${H_AUTH[@]}" -- "$(mk "$CORE" '{"link":"javascript:alert(1)"}')")
+chk "javascript: link -> bad_link" "400|{\"error\":\"bad_link\"}" "$r"; echo "       got: $r"
 r=$(post "${H_AUTH[@]}" -- "$(mk "$CORE" '{"deadline":null}')")
 chk "no deadline + evergreen false -> bad_deadline" "400|{\"error\":\"bad_deadline\"}" "$r"; echo "       got: $r"
 r=$(post "${H_AUTH[@]}" -- "$(mk "$CORE" "{\"deadline\":\"$PAST\"}")")

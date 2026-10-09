@@ -153,15 +153,25 @@ export const POST: APIRoute = async ({ request }) => {
   const prisma = getPrisma();
   if (!prisma) return jsonResponse({ error: 'db_unavailable' }, 503);
 
-  // --- the optional client timestamp: a real date, or the server's now ---
+  // --- the optional client timestamp: a real date, and a plausible one ---
   // The validator passes createdAt through untouched (it is optional), so the
   // parse check lives here. An unparseable value is rejected honestly rather
   // than handed to Prisma, where it would fail as a 503 that blames the
   // database for a bad body.
+  //
+  // It is also bounded. createdAt drives the "New" pill (72h) and the filing
+  // order, so an unbounded override lets a valid key holder back-date a listing
+  // by decades — or future-date it, which makes it "New" forever and sorts it to
+  // the top of the wire. A timestamp more than a day ahead of the server, or
+  // more than a year behind it, is a pipeline bug, not a filing.
   let createdAt = new Date();
   if (typeof input.createdAt === 'string' && input.createdAt.trim().length > 0) {
     const parsed = new Date(input.createdAt.trim());
     if (Number.isNaN(parsed.getTime())) {
+      return jsonResponse({ error: 'bad_created_at' }, 400);
+    }
+    const skewMs = Math.abs(parsed.getTime() - createdAt.getTime());
+    if (skewMs > 365 * 86_400_000) {
       return jsonResponse({ error: 'bad_created_at' }, 400);
     }
     createdAt = parsed;
@@ -213,6 +223,14 @@ export const POST: APIRoute = async ({ request }) => {
       select: { id: true },
     });
   } catch (error) {
+    // P2002 is the unique index on (link) where status = 'live'. Reaching it
+    // means the findFirst check above lost a race with a concurrent POST, so the
+    // database — not the route — decided this link is already live. That is
+    // still a clean 409 for the poster (TRD §4's idempotency contract), not a
+    // 500 and not a duplicate row.
+    if ((error as { code?: string }).code === 'P2002') {
+      return jsonResponse({ error: 'duplicate' }, 409);
+    }
     console.error('[api/listings] create failed:', dbErrorSummary(error));
     return jsonResponse({ error: 'db_unavailable' }, 503);
   }

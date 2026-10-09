@@ -44,7 +44,21 @@ export type ValidationResult =
 
 const REQUIRED_STRINGS = ['title', 'org', 'eligibility', 'link', 'summary'] as const;
 
-/** A URL is accepted only when it is https and parses with a real host. */
+/**
+ * A URL is accepted only when it is https and carries a REAL host.
+ *
+ * `hostname.length > 0` is not enough, and this is not theoretical: the WHATWG
+ * parser treats `https:///path` as having hostname `"path"` — the first segment
+ * of the triple-slash form becomes the host. So a link with no host at all
+ * passed this check and was stored live, which breaks the PRD's one hard rule
+ * (§7.1: "a listing without a working direct link is dropped, never guessed").
+ *
+ * A real host therefore needs a dot or an IPv6/IPv4 literal. `localhost` and
+ * single-label hosts are rejected deliberately: an application URL for this
+ * board always lives on a registrable domain, and the verifier re-resolves the
+ * link upstream anyway — this endpoint's job is to refuse shapes that cannot
+ * possibly be a direct application page.
+ */
 function validLink(raw: unknown): raw is string {
   if (typeof raw !== 'string' || raw.length === 0 || raw.length > 2048) return false;
   let url: URL;
@@ -53,7 +67,16 @@ function validLink(raw: unknown): raw is string {
   } catch {
     return false;
   }
-  return url.protocol === 'https:' && url.hostname.length > 0;
+  if (url.protocol !== 'https:') return false;
+
+  const host = url.hostname;
+  if (host.length === 0) return false;
+  // IPv6 literal — [::1] parses with the brackets retained.
+  if (host.startsWith('[')) return true;
+  // IPv4 literal — four dotted octets.
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host)) return true;
+  // A registrable host has at least one dot and a real TLD-ish label after it.
+  return /^[^.]+\..+$/.test(host) && !host.endsWith('.');
 }
 
 /**

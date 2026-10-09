@@ -333,3 +333,35 @@ test('null, arrays and primitives fail with missing_fields', () => {
   expectFailure(42, 'missing_fields');
   expectFailure(true, 'missing_fields');
 });
+
+test('a host-less link is rejected (bad_link), not accepted', () => {
+  // The WHATWG parser gives https:///path a hostname of "path", so a naive
+  // `hostname.length > 0` check accepted a link with no host at all — breaking
+  // PRD §7.1 (no working direct link, no listing). Found by a live audit.
+  const future = new Date(Date.now() + 45 * 86_400_000).toISOString();
+  const base = {
+    title: 'T', org: 'O', category: 'jobs', deadline: future, evergreen: false,
+    eligibility: 'e', region: 'nigeria', summary: 's',
+  };
+  const now = new Date();
+
+  const rejected = (link) => {
+    const r = validateListing({ ...base, link }, now);
+    return !r.ok && r.failure.code === 'bad_link';
+  };
+
+  assert.ok(rejected('https:///path'), 'host-less triple slash must be bad_link');
+  assert.ok(rejected('https://localhost/x'), 'a single-label host is not an application URL');
+  assert.ok(rejected('https://example.com.'), 'a trailing-dot host is not a real host');
+
+  // Still accepted: a registrable host, a deep subdomain, and IP literals.
+  for (const good of [
+    'https://example.com/apply',
+    'https://sub.example.co.uk/a?b=c#d',
+    'https://[::1]/x',
+    'https://127.0.0.1/x',
+  ]) {
+    const r = validateListing({ ...base, link: good }, now);
+    assert.ok(r.ok, `expected ${good} to pass, got ${r.ok ? 'ok' : r.failure.code}`);
+  }
+});

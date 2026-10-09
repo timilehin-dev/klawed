@@ -80,3 +80,17 @@ model Listing {
   @@index([status, deadline])
   @@index([createdAt])
 }
+
+// One live listing per link, enforced by the DATABASE, not by the route.
+//
+// The API's duplicate check is a findFirst followed by a create — two round
+// trips, so it is not atomic: two concurrent POSTs carrying the same link both
+// pass the check and both insert, which is exactly the retry storm the poster's
+// 409 contract exists to absorb (TRD §4). A unique index closes the window.
+//
+// This is raw SQL rather than a Prisma @@unique because the index is PARTIAL:
+// the rule is about LIVE listings. An expired row keeps its link (listings are
+// never hard-deleted, TRD §3) and must not block a future listing reusing that
+// URL, so the constraint has to be scoped with a WHERE clause — which Prisma's
+// schema language cannot express. The CREATE UNIQUE INDEX lives in the migration
+// (prisma/migrations/*_live_link_unique/migration.sql) and is idempotent.
