@@ -1,0 +1,30 @@
+---
+/**
+ * ArrowRight.astro — the thin-line affordance glyph.
+ *
+ * Marks the forward move: "Apply" on a feed row, "Read" on a category card.
+ * The word next to it carries the meaning; the arrow carries the direction.
+ */
+interface Props {
+  /** Rendered edge length in px. */
+  size?: number;
+}
+
+const { size = 14 } = Astro.props;
+---
+
+<svg
+  width={size}
+  height={size}
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  aria-hidden="true"
+  focusable="false"
+>
+  <path d="M5 12h13"></path>
+  <path d="M13 7l5 5-5 5"></path>
+</svg>

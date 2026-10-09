@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+# Operational endpoints are not content.
+Disallow: /api/
+
+Sitemap: https://klawhub.xyz/sitemap-index.xml

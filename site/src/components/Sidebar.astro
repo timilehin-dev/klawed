@@ -1,0 +1,86 @@
+---
+/**
+ * Sidebar.astro — "In this week's issue".
+ *
+ * One row per listing: the title, then "category · region · filed D Mon". The
+ * caller (frontPage) has already spread the picks across categories so the
+ * sidebar shows the range of the board rather than five of one kind. Renders
+ * nothing at all when the list is empty — an empty sidebar is a blank column,
+ * not a message.
+ */
+import { formatDayMonth } from '../lib/format';
+import { toKebab } from '../lib/category-map';
+import type { ListingView } from '../lib/listings';
+
+interface Props {
+  listings: ListingView[];
+}
+
+const { listings } = Astro.props;
+---
+
+{
+  listings.length > 0 && (
+    <aside class="issue">
+      <h2 class="issue-head">In this week's issue</h2>
+      <ul class="issue-list">
+        {listings.map((listing) => (
+          <li>
+            <a class="issue-item" href={`/listings/${listing.slug}`}>
+              <h3 class="issue-t">{listing.title}</h3>
+              <p class="issue-m">
+                {toKebab(listing.category)} · {listing.region} · filed {formatDayMonth(listing.createdAt)}
+              </p>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </aside>
+  )
+}
+
+<style>
+  .issue {
+    border-left: 1px solid var(--hairline);
+    padding-left: var(--space-8);
+  }
+
+  .issue-head {
+    font-family: var(--font-sans);
+    font-size: var(--text-label);
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  .issue-item {
+    display: block;
+    padding: var(--space-4) 0;
+    border-bottom: 1px solid var(--hairline);
+    transition: border-color var(--dur) var(--ease);
+  }
+  .issue-list > li:last-child .issue-item {
+    border-bottom: 0;
+  }
+
+  .issue-t {
+    font-family: var(--font-display);
+    font-size: var(--text-card-title);
+    font-weight: 500;
+    line-height: 1.25;
+    color: var(--ink);
+    transition: color var(--dur) var(--ease);
+  }
+  .issue-item:hover .issue-t {
+    color: var(--accent);
+  }
+
+  .issue-m {
+    font-size: var(--text-meta);
+    color: var(--body);
+    margin-top: var(--space-1);
+  }
+</style>

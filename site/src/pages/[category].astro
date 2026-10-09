@@ -1,0 +1,156 @@
+---
+/**
+ * Category pages — one route per category, generated from the CATEGORIES enum
+ * (docs/EXTENSIBILITY.md: "a new category is a page with no hand-written file").
+ *
+ * Same wire composition as the home page, minus the sidebar: a two-tone desk
+ * masthead ("Jobs desk, 14 open."), the note line ("/jobs · filtered to ..."),
+ * then date headers + EntryRows grouped inside each Nigeria-first region, and
+ * the archive strip for anything that has closed on this desk.
+ *
+ * An unknown slug returns a clean 404. Empty and DB-unreachable states render
+ * intentionally. Zero mock data — everything is loadCategory().
+ *
+ * Under `output: 'server'` every route renders on demand, so the category set is
+ * validated at request time from CATEGORIES (below) rather than enumerated in a
+ * getStaticPaths() — which Astro would ignore in server mode.
+ */
+import Base from '../layouts/Base.astro';
+import EntryRow from '../components/EntryRow.astro';
+import DayHeader from '../components/DayHeader.astro';
+import EmptyState from '../components/EmptyState.astro';
+import RefreshState from '../components/RefreshState.astro';
+import ArchiveStrip from '../components/ArchiveStrip.astro';
+import { loadCategory } from '../lib/listings';
+import { CATEGORIES, REGIONS } from '../lib/category-map';
+import { formatDayMonth, formatLongDate, plural } from '../lib/format';
+
+const { category } = Astro.params;
+const def = CATEGORIES.find((c) => c.kebab === category);
+
+if (!def) {
+  return Astro.rewrite('/404');
+}
+
+/* One instant for the whole render. */
+const now = new Date();
+const board = await loadCategory(def.kebab, now);
+
+const count = board.total;
+const regionGroups = REGIONS.map((region) => {
+  const entries = board.live.filter((l) => l.region === region);
+  if (entries.length === 0) return null;
+  const days: { date: Date; items: typeof entries }[] = [];
+  for (const entry of entries) {
+    let day = days.find((d) => formatDayMonth(d.date) === formatDayMonth(entry.createdAt));
+    if (!day) {
+      day = { date: entry.createdAt, items: [] };
+      days.push(day);
+    }
+    day.items.push(entry);
+  }
+  return { region, days };
+}).filter((g): g is NonNullable<typeof g> => g !== null);
+---
+
+<Base
+  title={`${def.label} desk — klawhub`}
+  description={`Open ${def.label} opportunities for builders, Nigeria first. Every listing carries a direct link, a real deadline and stated eligibility.`}
+  total={count}
+  counts={board.counts}
+  closingCount={board.closingSoon.length}
+  surface={def.kebab}
+  now={now}
+>
+  <div class="wrap">
+    <header class="desk">
+      <div class="rule" />
+      <div class="wire-head">
+        <h1 class="section-title wire-title">
+          <span class="tone-1">{def.label} desk,</span>{' '}
+          <span class="tone-2">{count} open.</span>
+        </h1>
+        <span class="wire-note">/{def.kebab} · the desk, filed by day · {formatLongDate(now)}</span>
+      </div>
+    </header>
+  </div>
+
+  {
+    board.unreachable ? (
+      <div class="wrap">
+        <RefreshState
+          title="The board is being refreshed."
+          body={`The ${def.label} desk could not reach the database just now. Nothing is filed onto the wire until it comes back — try again in a minute or two.`}
+        />
+      </div>
+    ) : count === 0 ? (
+      <div class="wrap">
+        <EmptyState
+          title={`Nothing open on the ${def.label} desk.`}
+          body={`No ${def.label} listings are live right now. When one is filed and checks out, it appears here with a direct link and a stated deadline.`}
+        />
+      </div>
+    ) : (
+      <div class="wrap">
+        <section class="sec">
+          {
+            regionGroups.map((group) => (
+              <>
+                {group.days.map((day) => (
+                  <>
+                    <DayHeader date={day.date} region={group.region} />
+                    <div class="feed">
+                      {day.items.map((l) => (
+                        <EntryRow listing={l} now={now} />
+                      ))}
+                    </div>
+                  </>
+                ))}
+              </>
+            ))
+          }
+
+          {board.archive.length > 0 && <ArchiveStrip listings={board.archive} />}
+        </section>
+      </div>
+    )
+  }
+</Base>
+
+<style>
+  .desk {
+    padding-top: var(--space-8);
+  }
+  .rule {
+    height: 2px;
+    background: var(--ink);
+    margin-bottom: var(--space-6);
+  }
+  .wire-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-5);
+    padding-bottom: var(--space-4);
+    border-bottom: 2px solid var(--ink);
+    margin-bottom: var(--space-5);
+    flex-wrap: wrap;
+  }
+  .wire-title {
+    font-size: var(--text-h1);
+    letter-spacing: -0.01em;
+    line-height: 1.08;
+  }
+  .wire-note {
+    font-size: var(--text-meta);
+    color: var(--body);
+  }
+  .sec {
+    padding-top: var(--space-6);
+  }
+  @media (max-width: 640px) {
+    .wire-title {
+      font-size: var(--text-h2);
+    }
+  }
+</style>

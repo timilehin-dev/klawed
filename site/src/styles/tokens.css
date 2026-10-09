@@ -1,0 +1,88 @@
+/*
+ * klawed design tokens — design-language.md §2, verbatim.
+ *
+ * This is the single source of visual truth. Every component references these
+ * variables; nothing re-declares a colour, radius, or spacing value. Tailwind v4
+ * reads this file through the @theme bridge in global.css, so the utilities and
+ * the raw variables agree by construction.
+ */
+
+:root {
+  /* ---- Neutrals (light editorial base) ---- */
+  --base: #ffffff; /* page background */
+  --band: #f4f4f5; /* light-gray band / chip fill / input wash */
+  --ink: #0b0b0b; /* near-black: headings clause 1, solid dark cards, primary text */
+  --body: #71717a; /* body/meta gray: secondary text, headings clause 2 */
+  --hairline: #e4e4e7; /* 1px borders, dividers */
+  --white: #ffffff;
+
+  /* Supporting neutrals */
+  --ink-2: #18181b; /* softer near-black: card titles / strong body on light */
+  --body-2: #52525b; /* darker gray for small body copy that must stay AA-safe */
+
+  /* ---- Single accent (considered Nigerian-green) ---- */
+  --accent: #0e7a46; /* primary actions, nigeria tag, status pills, ONE footer line */
+  --accent-strong: #0a6238; /* hover / pressed */
+  --accent-tint: #eaf5ee; /* very light flat accent wash — flat fill, never a gradient */
+
+  /* ---- Deadline urgency (semantic; deliberately NOT the accent) ---- */
+  --deadline-safe: var(--body); /* >7 days — quiet neutral gray text */
+  --rolling-fg: var(--body-2); /* evergreen "Rolling" — quiet, outlined */
+  --rolling-border: var(--hairline);
+  --closing-bg: #fef3c7; /* amber-100 pill fill */
+  --closing-fg: #92400e; /* amber-800 text — urgent, NOT green */
+  --closing-border: #fde68a; /* amber-200 pill border */
+  --expired-fg: #a1a1aa; /* zinc-400 — muted, strikethrough, archive only */
+
+  /* ---- Region tags (hierarchy reinforces Nigeria-first) ---- */
+  --region-nigeria-bg: var(--accent); /* solid = foregrounded, first-class */
+  --region-nigeria-fg: #ffffff;
+  --region-africa-fg: var(--ink); /* outlined = second tier */
+  --region-africa-border: #d4d4d8;
+  --region-global-bg: var(--band); /* muted = third tier */
+  --region-global-fg: var(--body);
+
+  /* ---- Radii (pill / radius shape language) ---- */
+  --radius-card: 18px; /* listing rows, standard cards */
+  --radius-card-lg: 24px; /* large feature blocks, closing-soon, newsletter */
+  --radius-input: 12px; /* text inputs */
+  --radius-pill: 9999px; /* buttons, chips, badges, tags (fully round) */
+
+  /* ---- Spacing scale (4px base) ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-8: 48px;
+  --space-10: 64px;
+  --space-12: 96px;
+  --space-16: 128px;
+
+  /* ---- Layout ---- */
+  --content-max: 1120px;
+  --gutter: 24px; /* 20px below 640px */
+
+  /* ---- Type families ---- */
+  --font-display: 'Newsreader', Georgia, 'Times New Roman', serif;
+  --font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* ---- Type scale ---- */
+  --text-display: 64px; /* steps 64 → 48 → 36 at 1280 / 900 / 640 */
+  --text-h1: 40px;
+  --text-h2: 32px;
+  --text-h3: 24px;
+  --text-card-title: 20px;
+  --text-lead: 18px;
+  --text-body: 16px;
+  --text-body-sm: 15px;
+  --text-meta: 14px;
+  --text-label: 12px;
+  --text-chip: 14px;
+  --text-badge: 12px;
+
+  /* ---- Motion ---- */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur: 200ms;
+}

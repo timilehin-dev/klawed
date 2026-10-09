@@ -1,0 +1,48 @@
+---
+/**
+ * RefreshState.astro — the database could not be reached.
+ *
+ * TRD §9: a visitor never sees a stack trace or a raw error. This states that
+ * the board is being refreshed and shows no data at all — not stale listings,
+ * not cached numbers, not a spinner pretending to work.
+ */
+interface Props {
+  title?: string;
+  body?: string;
+}
+
+const {
+  title = 'The board is being refreshed',
+  body = 'The listing database could not be reached just now, so nothing is being shown rather than something out of date. Reload in a minute or two.',
+} = Astro.props;
+---
+
+<div class="refresh" role="status">
+  <h2 class="refresh-title">{title}</h2>
+  <p class="refresh-body">{body}</p>
+</div>
+
+<style>
+  .refresh {
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-card);
+    padding: var(--space-8) var(--space-6);
+    max-width: 68ch;
+  }
+
+  .refresh-title {
+    font-family: var(--font-display);
+    font-size: var(--text-h3);
+    font-weight: 500;
+    line-height: 1.2;
+    color: var(--ink);
+  }
+
+  .refresh-body {
+    font-size: var(--text-body-sm);
+    color: var(--body-2);
+    margin-top: var(--space-3);
+    line-height: 1.65;
+    max-width: 58ch;
+  }
+</style>

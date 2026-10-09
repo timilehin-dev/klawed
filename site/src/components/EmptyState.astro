@@ -1,0 +1,50 @@
+---
+/**
+ * EmptyState.astro — the zero-listings board.
+ *
+ * A board with nothing in it yet is not an error, so this states the plain
+ * fact and the next dispatch time, and offers nothing to click. It invents no
+ * listings, no counts, and no fake "check back tomorrow" promise beyond the
+ * one cadence line the board actually keeps.
+ */
+interface Props {
+  title?: string;
+  body?: string;
+}
+
+const {
+  title = 'Nothing filed yet',
+  body = 'The board is empty for the moment. Listings are checked by hand before they go up, so the first dispatch lands only once something has actually cleared that check.',
+} = Astro.props;
+---
+
+<div class="empty" role="status">
+  <h2 class="empty-title">{title}</h2>
+  <p class="empty-body">{body}</p>
+</div>
+
+<style>
+  .empty {
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-card);
+    background: var(--band);
+    padding: var(--space-8) var(--space-6);
+    max-width: 68ch;
+  }
+
+  .empty-title {
+    font-family: var(--font-display);
+    font-size: var(--text-h3);
+    font-weight: 500;
+    line-height: 1.2;
+    color: var(--ink);
+  }
+
+  .empty-body {
+    font-size: var(--text-body-sm);
+    color: var(--body-2);
+    margin-top: var(--space-3);
+    line-height: 1.65;
+    max-width: 58ch;
+  }
+</style>

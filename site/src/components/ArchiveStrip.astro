@@ -1,0 +1,86 @@
+---
+/**
+ * ArchiveStrip.astro — filed and closed.
+ *
+ * Expired listings are kept, not deleted, so the strip simply states what has
+ * closed with a strikethrough date. Nothing here is clickable: a closed
+ * listing's detail page is gone. Renders nothing when the archive is empty.
+ */
+import { formatClosedDate, isExpired } from '../lib/format';
+import type { ListingView } from '../lib/listings';
+
+interface Props {
+  listings: ListingView[];
+  /** The page's single render instant. */
+  now?: Date;
+}
+
+const { listings, now = new Date() } = Astro.props;
+
+// Only genuinely expired rows carry a "Closed <date>" line; an evergreen row
+// with no deadline is not archived at all, so it cannot appear here.
+const rows = listings
+  .filter((l) => l.deadline !== null && !l.evergreen && isExpired(l.deadline, l.evergreen, now))
+  .map((l) => ({ title: l.title, closed: formatClosedDate(l.deadline as Date) }));
+---
+
+{
+  rows.length > 0 && (
+    <section class="archive" aria-labelledby="archive-head">
+      <h2 class="archive-head" id="archive-head">
+        Filed and closed — kept in the archive
+      </h2>
+      <ul class="archive-list">
+        {rows.map((row) => (
+          <li class="archive-item">
+            <span class="archive-title">{row.title}</span>
+            <span class="archive-closed">{row.closed}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+<style>
+  .archive {
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-card);
+    padding: var(--space-5) var(--space-6);
+    margin-top: var(--space-8);
+  }
+
+  .archive-head {
+    font-family: var(--font-sans);
+    font-size: var(--text-label);
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--body);
+    margin-bottom: var(--space-3);
+  }
+
+  .archive-item {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding: var(--space-3) 0;
+    border-top: 1px solid var(--hairline);
+    font-size: var(--text-body-sm);
+  }
+  .archive-item:first-of-type {
+    border-top: 0;
+  }
+
+  .archive-title {
+    color: var(--body-2);
+  }
+
+  .archive-closed {
+    color: var(--expired-fg);
+    text-decoration: line-through;
+    font-size: var(--text-meta);
+    flex: none;
+  }
+</style>

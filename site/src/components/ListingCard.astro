@@ -1,0 +1,111 @@
+---
+/**
+ * ListingCard.astro — the category-page card.
+ *
+ * Eyebrow, Newsreader title, the eligibility line (who can apply, from where),
+ * the clamped summary, then a footer with the deadline badge and a Read
+ * affordance. The whole card links to the detail page.
+ */
+import RegionTag from './RegionTag.astro';
+import DeadlineBadge from './DeadlineBadge.astro';
+import ArrowRight from './icons/ArrowRight.astro';
+import { toKebab } from '../lib/category-map';
+import type { ListingView } from '../lib/listings';
+
+interface Props {
+  listing: ListingView;
+  /** The page's single render instant. */
+  now?: Date;
+}
+
+const { listing, now = new Date() } = Astro.props;
+---
+
+<a class="card" href={`/listings/${listing.slug}`}>
+  <span class="card-cat">{toKebab(listing.category)} · {listing.region}</span>
+  <h3 class="card-title">{listing.title}</h3>
+  <p class="card-elig">{listing.eligibility}</p>
+  <p class="card-sum">{listing.summary}</p>
+
+  <div class="card-foot">
+    <DeadlineBadge deadline={listing.deadline} evergreen={listing.evergreen} now={now} />
+    <span class="read">
+      Read
+      <ArrowRight />
+    </span>
+  </div>
+</a>
+
+<style>
+  .card {
+    display: flex;
+    flex-direction: column;
+    background: var(--base);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-card);
+    padding: var(--space-5);
+    transition:
+      transform var(--dur) var(--ease),
+      border-color var(--dur) var(--ease);
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    border-color: var(--ink-2);
+  }
+
+  .card-cat {
+    font-family: var(--font-sans);
+    font-size: var(--text-label);
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--body);
+  }
+
+  .card-title {
+    font-family: var(--font-display);
+    font-size: var(--text-card-title);
+    font-weight: 500;
+    line-height: 1.2;
+    color: var(--ink);
+    margin-top: var(--space-3);
+  }
+
+  .card-elig {
+    font-size: var(--text-meta);
+    color: var(--body);
+    margin-top: var(--space-3);
+  }
+
+  .card-sum {
+    font-size: var(--text-body-sm);
+    color: var(--body-2);
+    margin-top: var(--space-3);
+    line-height: 1.55;
+  }
+
+  .card-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-top: auto;
+    padding-top: var(--space-5);
+  }
+
+  .read {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--text-meta);
+    font-weight: 600;
+    color: var(--accent);
+    transition:
+      gap var(--dur) var(--ease),
+      color var(--dur) var(--ease);
+  }
+  .card:hover .read {
+    gap: 10px;
+    color: var(--accent-strong);
+  }
+</style>

@@ -1,0 +1,61 @@
+---
+/**
+ * NewPill.astro — "filed in the last 72 hours".
+ *
+ * The pill rides next to a listing title (EntryRow) or the card title. Its
+ * accent tint is one of the sanctioned accent uses (design-language §5.8):
+ * status pills, not decoration. The word "New" is always present, so the state
+ * never rests on colour alone.
+ */
+import { isNew } from '../lib/format';
+
+interface Props {
+  /** When the listing was filed. */
+  createdAt: Date;
+  /** The page's single render instant. */
+  now?: Date;
+}
+
+const { createdAt, now = new Date() } = Astro.props;
+---
+
+{
+  isNew(createdAt, now) && (
+    <span class="new">
+      <span class="new-sr">Newly filed: </span>New
+    </span>
+  )
+}
+
+<style>
+  .new {
+    display: inline-flex;
+    align-items: center;
+    height: 20px;
+    padding: 0 var(--space-2);
+    margin-left: var(--space-2);
+    border-radius: var(--radius-pill);
+    background: var(--accent-tint);
+    color: var(--accent-strong);
+    font-family: var(--font-sans);
+    font-size: var(--text-label);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    line-height: 1;
+    vertical-align: 2px;
+  }
+
+  /* Screen-reader-only qualifier so the pill reads as a sentence. */
+  .new-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+</style>

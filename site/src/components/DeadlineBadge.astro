@@ -1,0 +1,96 @@
+---
+/**
+ * DeadlineBadge.astro — the four live deadline states.
+ *
+ * Copy comes from the deadline state itself, never from a stored string
+ * (design-language §5.3): rolling → "Rolling", safe → "Closes 12 Nov",
+ * closing → "3 days left", today → "Closes today". The closed state is
+ * archive-only and is never rendered here — expired listings never reach a
+ * live surface (src/lib/listings.ts routes them out before this runs).
+ *
+ * The clock glyph appears only where a countdown is actually being read
+ * (closing, today). Urgency is amber, never the accent green.
+ */
+import Clock from './icons/Clock.astro';
+import { deadlineState, daysLeft, formatClosesDate } from '../lib/format';
+
+interface Props {
+  deadline: Date | null;
+  evergreen: boolean;
+  /** The page's single render instant. Defaults to now. */
+  now?: Date;
+}
+
+const { deadline, evergreen, now = new Date() } = Astro.props;
+
+const state = deadlineState(deadline, evergreen, now);
+
+// daysLeft is only meaningful for a non-null, non-evergreen deadline; the lib
+// guards the other states, and the fallback keeps a null deadline quiet.
+const days = deadline ? daysLeft(deadline, now) : 0;
+const label =
+  state === 'today'
+    ? 'Closes today'
+    : state === 'closing'
+      ? `${days} ${days === 1 ? 'day' : 'days'} left`
+      : deadline
+        ? formatClosesDate(deadline)
+        : 'Rolling';
+
+const counted = state === 'closing' || state === 'today';
+---
+
+<span class:list={['badge', `badge-${state}`]}>
+  {counted && <Clock />}
+  <span class:list={[counted && 'tabular']}>{label}</span>
+</span>
+
+<style>
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex: none;
+    height: 26px;
+    padding: 0 var(--space-3);
+    border: 1px solid transparent;
+    border-radius: var(--radius-pill);
+    font-family: var(--font-sans);
+    font-size: var(--text-badge);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    line-height: 1;
+  }
+  .badge > svg {
+    flex: none;
+  }
+
+  /* Evergreen — outlined, quiet, no urgency colour. */
+  .badge-rolling {
+    background: transparent;
+    border-color: var(--rolling-border);
+    color: var(--rolling-fg);
+  }
+
+  /* A dated deadline further than seven days out — flat band, no urgency. */
+  .badge-safe {
+    background: var(--band);
+    border-color: transparent;
+    color: var(--deadline-safe);
+  }
+
+  /* ≤ 7 days — amber, urgent. */
+  .badge-closing {
+    background: var(--closing-bg);
+    border-color: var(--closing-border);
+    color: var(--closing-fg);
+  }
+
+  /* Within the day — near-black, the loudest of the four. */
+  .badge-today {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--white);
+  }
+</style>

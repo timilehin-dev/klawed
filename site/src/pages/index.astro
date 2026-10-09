@@ -1,0 +1,374 @@
+---
+/**
+ * Home — Variant C "The Wire" front page (docs/design-variants/variant-c-the-wire.html).
+ *
+ * One request, one clock: `now` is taken once here and threaded through
+ * loadBoard(), every component and the dateline in Base.astro, so a page can
+ * never show two different times (WAVE2-BRIEF).
+ *
+ * Composition (top to bottom):
+ *   1. dispatch masthead — 2px ink rule, issue number, tagline, lede, live
+ *      status, "In this week's issue" sidebar (frontPage(board, 5));
+ *   2. Closing Soon — the one sanctioned near-black block, board.closingSoon;
+ *   3. the dated wire — Nigeria → Africa → Global, date headers inside each;
+ *   4. archive strip; 5. about + newsletter.
+ *
+ * Zero mock data: every listing below comes from loadBoard(). The empty board
+ * and the DB-unreachable board each render their own intentional state.
+ */
+import Base from '../layouts/Base.astro';
+import EntryRow from '../components/EntryRow.astro';
+import ClosingSoon from '../components/ClosingSoon.astro';
+import DayHeader from '../components/DayHeader.astro';
+import EmptyState from '../components/EmptyState.astro';
+import RefreshState from '../components/RefreshState.astro';
+import NewsletterSignup from '../components/NewsletterSignup.astro';
+import ArchiveStrip from '../components/ArchiveStrip.astro';
+import { loadBoard, frontPage } from '../lib/listings';
+import { REGIONS } from '../lib/category-map';
+import {
+  formatDayMonth,
+  formatLongDate,
+  formatWatTime,
+  isoWeek,
+  plural,
+} from '../lib/format';
+
+/* One instant for the whole render — injected into the lib, the components
+   and Base's dateline so nothing on the page can disagree with anything else. */
+const now = new Date();
+const board = await loadBoard(now);
+
+const sidebar = board.unreachable ? [] : frontPage(board, 5);
+const filedToday = board.live.filter(
+  (l) => formatDayMonth(l.createdAt) === formatDayMonth(now),
+).length;
+
+/* Nigeria-first region groups, each holding its own distinct filing days. */
+const regionGroups = REGIONS.map((region) => {
+  const entries = board.live.filter((l) => l.region === region);
+  if (entries.length === 0) return null;
+  const days: { date: Date; items: typeof entries }[] = [];
+  for (const entry of entries) {
+    let day = days.find((d) => formatDayMonth(d.date) === formatDayMonth(entry.createdAt));
+    if (!day) {
+      day = { date: entry.createdAt, items: [] };
+      days.push(day);
+    }
+    day.items.push(entry);
+  }
+  return { region, days };
+}).filter((g): g is NonNullable<typeof g> => g !== null);
+---
+
+<Base
+  title="klawhub — opportunities, klawed first"
+  description="A dated dispatch of real openings for builders — jobs, grants, hackathons, visas and the free tools worth having. Nigeria first, then Africa, then global."
+  total={board.total}
+  counts={board.counts}
+  closingCount={board.closingSoon.length}
+  surface="home"
+  now={now}
+>
+  {
+    board.unreachable ? (
+      <RefreshState
+        title="The board is being refreshed."
+        body="The database is out of reach at the moment, so nothing can be filed onto the wire. It usually comes back on its own — try again in a minute or two."
+      />
+    ) : board.total === 0 ? (
+      <>
+        <div class="wrap">
+          <header class="dispatch">
+            <div class="rule" />
+            <div class="disp-top">
+              <p class="disp-name">This week's openings</p>
+              <p class="disp-meta">
+                Week {isoWeek(now)} · {formatLongDate(now)}
+                <br />
+                compiled {formatWatTime(now)} WAT, every link checked by hand
+              </p>
+            </div>
+          </header>
+        </div>
+        <EmptyState
+          title="Nothing filed yet."
+          body="The wire is quiet right now — no listings are live on the board. That is a data state, not an error. The next dispatch goes out as soon as something checks out."
+        />
+      </>
+    ) : (
+      <>
+        {/* ── 1. dispatch masthead ─────────────────────────────── */}
+        <div class="wrap">
+          <header class="dispatch">
+            <div class="rule" />
+            <div class="disp-top">
+              <p class="disp-name">This week's openings</p>
+              <p class="disp-meta">
+                Week {isoWeek(now)} · {formatLongDate(now)}
+                <br />
+                compiled {formatWatTime(now)} WAT, every link checked by hand
+              </p>
+            </div>
+
+            <div class="disp-body">
+              <div class="disp-left">
+                <h1 class="display">
+                  <span class="tone-1">Opportunities,</span> <span class="tone-2">klawed first.</span>
+                </h1>
+                <p class="lede">
+                  A weekly dispatch of real openings for builders — jobs, grants, hackathons, visas and
+                  the free tools worth having.
+                </p>
+                <p class="livestatus">
+                  <b>{board.total} open {plural(board.total, 'opportunity', 'opportunities')}</b> ·{' '}
+                  {filedToday === 0 ? 'none filed today' : `${filedToday} filed today`} ·{' '}
+                  {board.closingSoon.length > 0
+                    ? `${board.closingSoon.length} closing this week`
+                    : 'nothing closing this week'}
+                </p>
+              </div>
+
+              <aside class="disp-right">
+                <h4>In this week's issue</h4>
+                {
+                  sidebar.map((l) => (
+                    <a class="disp-item" href={`/listings/${l.slug}`}>
+                      <p class="disp-item-t">{l.title}</p>
+                      <p class="disp-item-m">
+                        {l.category} · {l.region} · filed {formatDayMonth(l.createdAt)}
+                      </p>
+                    </a>
+                  ))
+                }
+              </aside>
+            </div>
+          </header>
+        </div>
+
+        {/* ── 2. closing soon, first class ─────────────────────── */}
+        {
+          board.closingSoon.length > 0 && (
+            <div class="wrap">
+              <ClosingSoon listings={board.closingSoon} now={now} />
+            </div>
+          )
+        }
+
+        {/* ── 3. the dated wire ────────────────────────────────── */}
+        <div class="wrap">
+          <section class="sec">
+            <div class="wire-head">
+              <h2 class="section-title wire-title">
+                <span class="tone-1">The board,</span> <span class="tone-2">filed by day.</span>
+              </h2>
+              <span class="wire-note">Newest first inside each region · Nigeria → Africa → Global</span>
+            </div>
+
+            {
+              regionGroups.map((group) => (
+                <>
+                  {group.days.map((day) => (
+                    <>
+                      <DayHeader date={day.date} region={group.region} />
+                      <div class="feed">
+                        {day.items.map((l) => (
+                          <EntryRow listing={l} now={now} />
+                        ))}
+                      </div>
+                    </>
+                  ))}
+                </>
+              ))
+            }
+
+            {/* ── 4. archive strip ───────────────────────────── */}
+            {board.archive.length > 0 && <ArchiveStrip listings={board.archive} />}
+          </section>
+        </div>
+
+        {/* ── 5. about + newsletter ────────────────────────────── */}
+        <div class="wrap">
+          <section class="sec">
+            <div class="about">
+              <h3>How this dispatch is put together</h3>
+              <p>
+                One bot writes every listing here. Each entry carries a direct link that resolves, a
+                deadline that is genuinely in the future, and stated eligibility — who can apply, and
+                from where. A person reads the list before it is filed and kills anything that does
+                not check out.
+              </p>
+              <a class="about-link" href="/about">More about the rules →</a>
+            </div>
+          </section>
+
+          <section class="sec">
+            <NewsletterSignup />
+          </section>
+        </div>
+      </>
+    )
+  }
+</Base>
+
+<style>
+  /* ── dispatch masthead ────────────────────────────────────── */
+  .dispatch {
+    padding: var(--space-8) 0 var(--space-6);
+  }
+  .rule {
+    height: 2px;
+    background: var(--ink);
+    margin-bottom: var(--space-6);
+  }
+  .disp-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-5);
+    padding-bottom: var(--space-5);
+    border-bottom: 1px solid var(--ink);
+  }
+  .disp-name {
+    font-family: var(--font-display);
+    font-size: var(--text-h2);
+    font-weight: 500;
+    color: var(--ink);
+    line-height: 1;
+    letter-spacing: -0.01em;
+  }
+  .disp-meta {
+    font-size: var(--text-meta);
+    color: var(--body);
+    text-align: right;
+    line-height: 1.5;
+  }
+  .disp-body {
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+    gap: var(--space-8);
+    padding-top: var(--space-6);
+  }
+  .display {
+    font-family: var(--font-display);
+    font-size: var(--text-display);
+    font-weight: 400;
+    line-height: 1.04;
+    letter-spacing: -0.02em;
+  }
+  .lede {
+    font-size: var(--text-lead);
+    line-height: 1.6;
+    color: var(--body);
+    margin-top: var(--space-5);
+    max-width: 60ch;
+  }
+  .livestatus {
+    font-size: var(--text-meta);
+    color: var(--body);
+    margin-top: var(--space-5);
+  }
+  .livestatus b {
+    color: var(--ink-2);
+    font-weight: 600;
+  }
+  .disp-right {
+    border-left: 1px solid var(--hairline);
+    padding-left: var(--space-8);
+  }
+  .disp-right h4 {
+    font-family: var(--font-sans);
+    font-size: var(--text-label);
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--hairline);
+  }
+  .disp-item {
+    display: block;
+    padding: var(--space-4) 0;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .disp-item-t {
+    font-family: var(--font-display);
+    font-size: var(--text-lead);
+    font-weight: 500;
+    line-height: 1.25;
+    color: var(--ink);
+    transition: color var(--dur) var(--ease);
+  }
+  .disp-item-t:hover {
+    color: var(--accent);
+  }
+  .disp-item-m {
+    font-size: var(--text-meta);
+    color: var(--body);
+    margin-top: var(--space-1);
+  }
+
+  /* ── about block on the home page ─────────────────────────── */
+  .about {
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-card);
+    padding: var(--space-6);
+    background: var(--accent-tint);
+    max-width: 74ch;
+  }
+  .about h3 {
+    font-size: var(--text-h3);
+    line-height: 1.16;
+    color: var(--ink);
+  }
+  .about p {
+    font-size: var(--text-body);
+    color: var(--body-2);
+    margin-top: var(--space-4);
+    line-height: 1.65;
+  }
+  .about-link {
+    display: inline-block;
+    margin-top: var(--space-4);
+    font-size: var(--text-meta);
+    font-weight: 500;
+    color: var(--accent);
+    min-height: 24px;
+  }
+  .about-link:hover {
+    color: var(--accent-strong);
+  }
+
+  .sec {
+    padding-top: var(--space-10);
+  }
+
+  @media (max-width: 1000px) {
+    .disp-body {
+      grid-template-columns: 1fr;
+    }
+    .disp-right {
+      border-left: 0;
+      padding-left: 0;
+      border-top: 1px solid var(--hairline);
+      padding-top: var(--space-6);
+    }
+  }
+  @media (max-width: 900px) {
+    .sec {
+      padding-top: var(--space-10);
+    }
+  }
+  @media (max-width: 640px) {
+    .display {
+      font-size: 36px;
+    }
+    .disp-top {
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+    .disp-meta {
+      text-align: left;
+    }
+  }
+</style>

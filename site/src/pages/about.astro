@@ -1,0 +1,152 @@
+---
+/**
+ * About — plain, one screen (PRD §8): what klawed is, that a bot writes each
+ * listing, that every link is checked by hand before filing, that a person
+ * approves before publish, the four hard rules, and who runs it.
+ *
+ * id="rules" is the anchor the footer links to (/about#rules).
+ */
+import Base from '../layouts/Base.astro';
+import { siteUrl } from '../lib/env';
+
+const now = new Date();
+---
+
+<Base title="About — klawhub" description="What klawhub is, and the rules every listing has to pass." now={now}>
+  <div class="wrap">
+    <article class="about-page">
+      <header class="head">
+        <div class="rule"></div>
+        <h1>
+          <span class="tone-1">What klawed</span> <span class="tone-2">actually is.</span>
+        </h1>
+      </header>
+
+      <div class="body">
+        <p class="lead">
+          Klawed is a dated dispatch of real openings for builders — jobs, grants, hackathons,
+          visas, scholarships and the free tools worth having. Nigeria first, then Africa, then
+          everywhere else. One bot writes every listing.
+        </p>
+
+        <p>
+          A bot files each entry: it takes the opportunity's own name, the org running it, a direct
+          link, a deadline, and who is eligible. Then a person reads the list before anything goes
+          out and kills what does not check out. The bot writes; a person approves. Nothing gets
+          onto the board by skipping that step.
+        </p>
+
+        <p>
+          Every link is checked by hand before it is filed, and checked again after. If a link
+          breaks, the listing comes down the same day rather than pointing at a search page.
+        </p>
+
+        <section id="rules">
+          <h2>The four rules</h2>
+          <ol class="rules">
+            <li>
+              <b>Direct links only.</b> Never a search page, never a guessed URL — the org's own
+              application page, or nothing.
+            </li>
+            <li>
+              <b>Real deadlines.</b> A deadline that is genuinely in the future, or an honest
+              rolling programme. A listing with no date and no rolling status does not get filed.
+            </li>
+            <li>
+              <b>Stated eligibility.</b> Who can apply, and from where, in the listing's own words.
+              If the page does not say, the listing is dropped.
+            </li>
+            <li>
+              <b>Nothing sponsored.</b> No paid placements, no featured tiers, no affiliate links,
+              no exceptions.
+            </li>
+          </ol>
+        </section>
+
+        <section class="who">
+          <h2>Who runs it</h2>
+          <p>
+            One small crew — a bot pipeline for the scouting, writing and checking, and one person
+            who approves each dispatch. It is run from Lagos, on West Africa Time. The newsletter
+            goes out on the same clock.
+          </p>
+          <p>
+            If something here is wrong — a dead link, a deadline that moved, a listing that should
+            not be on the board — say so: <a href="mailto:links@klawhub.xyz">links@klawhub.xyz</a>.
+          </p>
+        </section>
+      </div>
+    </article>
+  </div>
+</Base>
+
+<style>
+  .about-page {
+    padding: var(--space-8) 0 var(--space-6);
+    max-width: 68ch;
+  }
+  .head .rule {
+    height: 2px;
+    background: var(--ink);
+    margin-bottom: var(--space-6);
+  }
+  .head h1 {
+    font-family: var(--font-display);
+    font-size: var(--text-h1);
+    font-weight: 500;
+    line-height: 1.08;
+    letter-spacing: -0.01em;
+    padding-bottom: var(--space-5);
+    border-bottom: 1px solid var(--ink);
+  }
+  .body {
+    padding-top: var(--space-6);
+  }
+  .body p {
+    font-size: var(--text-body);
+    color: var(--body-2);
+    line-height: 1.7;
+    margin-top: var(--space-4);
+  }
+  .lead {
+    font-size: var(--text-lead) !important;
+    color: var(--body) !important;
+  }
+  .body a {
+    color: var(--accent);
+  }
+  .body a:hover {
+    color: var(--accent-strong);
+  }
+  #rules,
+  .who {
+    margin-top: var(--space-8);
+  }
+  #rules h2,
+  .who h2 {
+    font-size: var(--text-h3);
+    color: var(--ink);
+    margin-bottom: var(--space-4);
+  }
+  .rules {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+  .rules li {
+    font-size: var(--text-body);
+    color: var(--body-2);
+    line-height: 1.6;
+    padding-left: var(--space-5);
+    border-left: 2px solid var(--hairline);
+  }
+  .rules b {
+    color: var(--ink-2);
+    font-weight: 600;
+  }
+  @media (max-width: 640px) {
+    .head h1 {
+      font-size: var(--text-h2);
+    }
+  }
+</style>

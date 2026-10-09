@@ -1,0 +1,183 @@
+---
+/**
+ * ClosingSoon.astro — the one sanctioned near-black block.
+ *
+ * Held as a first-class section rather than buried in the feed: everything
+ * closing inside seven days, two columns, each item linked to its detail page.
+ * The note line states how many are in the block and how many of them were
+ * filed this week — both counts are computed here from the real list, never
+ * stored or invented. Renders nothing when the list is empty.
+ */
+import RegionTag from './RegionTag.astro';
+import DeadlineBadge from './DeadlineBadge.astro';
+import { formatDayMonth, isNew } from '../lib/format';
+import { toKebab } from '../lib/category-map';
+import type { ListingView } from '../lib/listings';
+
+interface Props {
+  listings: ListingView[];
+  /** The page's single render instant. */
+  now?: Date;
+}
+
+const { listings, now = new Date() } = Astro.props;
+
+const filedThisWeek = listings.filter((l) => isNew(l.createdAt, now)).length;
+---
+
+{
+  listings.length > 0 && (
+    <section class="closing" aria-labelledby="closing-title">
+      <div class="closing-head">
+        <h3 class="closing-title" id="closing-title">
+          <span class="tone-1 is-on-dark">Closing soon</span> <span class="tone-2 is-on-dark">— under seven days.</span>
+        </h3>
+        <span class="closing-note tabular">
+          {listings.length} open · {filedThisWeek} filed this week
+        </span>
+      </div>
+
+      <div class="closing-grid">
+        {listings.map((listing) => (
+          <a class="citem" href={`/listings/${listing.slug}`}>
+            <h4 class="citem-t">{listing.title}</h4>
+            <p class="citem-m">
+              {listing.org} · {toKebab(listing.category)} · {listing.region} · filed{' '}
+              {formatDayMonth(listing.createdAt)}
+            </p>
+            <p class="citem-sum">{listing.summary}</p>
+            <div class="citem-b">
+              <RegionTag region={listing.region} onDark />
+              <DeadlineBadge deadline={listing.deadline} evergreen={listing.evergreen} now={now} />
+            </div>
+          </a>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+<style>
+  .closing {
+    background: var(--ink);
+    border-radius: var(--radius-card-lg);
+    padding: var(--space-6);
+    color: var(--white);
+    margin-top: var(--space-6);
+    /*
+      The approved mockup scopes --on-dark-meta in its own :root; the committed
+      tokens.css does not carry it, and this layer may not edit that file. It is
+      declared here, once, at the dark block's root — exactly the subtree that
+      needs it (this card, plus the on-dark RegionTag pills rendered inside).
+    */
+    --on-dark-meta: #a1a1aa;
+  }
+
+  .closing-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding-bottom: var(--space-4);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+  }
+
+  .closing-title {
+    font-family: var(--font-display);
+    font-size: var(--text-h3);
+    font-weight: 500;
+    line-height: 1.2;
+  }
+  /* Two-tone heading, dark variant: clause 1 white, clause 2 muted on dark. */
+  .is-on-dark {
+    color: var(--white);
+  }
+  .tone-2.is-on-dark {
+    color: var(--on-dark-meta);
+  }
+
+  .closing-note {
+    font-size: var(--text-meta);
+    color: var(--on-dark-meta);
+    white-space: nowrap;
+  }
+
+  .closing-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 var(--space-8);
+    margin-top: var(--space-2);
+  }
+
+  .citem {
+    display: block;
+    padding: var(--space-4) 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    transition: border-color var(--dur) var(--ease);
+  }
+
+  .citem-t {
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    font-weight: 600;
+    color: var(--white);
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+    transition: color var(--dur) var(--ease);
+  }
+  .citem:hover .citem-t {
+    color: var(--accent-tint);
+  }
+
+  .citem-m {
+    font-size: var(--text-meta);
+    color: var(--on-dark-meta);
+    margin-top: 3px;
+  }
+
+  .citem-sum {
+    font-size: var(--text-meta);
+    color: var(--body);
+    margin-top: 7px;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .citem-b {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-top: 10px;
+  }
+
+  /* The deadline badges sit on a near-black fill: the safe band and the
+     rolling outline both go quiet so only the countdown reads. */
+  .citem-b :global(.badge-safe) {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--on-dark-meta);
+  }
+  .citem-b :global(.badge-rolling) {
+    border-color: var(--body-2);
+    color: var(--on-dark-meta);
+  }
+  .citem-b :global(.badge-today) {
+    background: var(--white);
+    border-color: var(--white);
+    color: var(--ink);
+  }
+
+  @media (max-width: 1000px) {
+    .closing-grid {
+      grid-template-columns: 1fr;
+    }
+    .closing-head {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--space-2);
+    }
+  }
+</style>

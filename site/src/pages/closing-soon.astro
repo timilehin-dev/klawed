@@ -1,0 +1,107 @@
+---
+/**
+ * Closing-soon — the same ≤7-day listings as the home block, given the full
+ * wire treatment (more room than the compact dark block). Reachable from the
+ * chip bar, which is why the surface prop is 'closing-soon'.
+ *
+ * Empty and DB-unreachable states render intentionally.
+ */
+import Base from '../layouts/Base.astro';
+import EntryRow from '../components/EntryRow.astro';
+import EmptyState from '../components/EmptyState.astro';
+import RefreshState from '../components/RefreshState.astro';
+import { loadBoard } from '../lib/listings';
+import { formatLongDate, plural } from '../lib/format';
+
+const now = new Date();
+const board = await loadBoard(now);
+const items = board.closingSoon;
+---
+
+<Base
+  title="Closing soon — klawhub"
+  description="Openings on the board closing within seven days, Nigeria first."
+  total={board.total}
+  counts={board.counts}
+  closingCount={items.length}
+  surface="closing-soon"
+  now={now}
+>
+  <div class="wrap">
+    <header class="head">
+      <div class="rule"></div>
+      <div class="wire-head">
+        <h1 class="section-title wire-title">
+          <span class="tone-1">Closing soon</span> <span class="tone-2">— under seven days.</span>
+        </h1>
+        <span class="wire-note">
+          {items.length} of {board.total} open · {formatLongDate(now)}
+        </span>
+      </div>
+    </header>
+  </div>
+
+  {
+    board.unreachable ? (
+      <div class="wrap">
+        <RefreshState
+          title="The board is being refreshed."
+          body="The closing-soon list could not reach the database just now. Try again in a minute or two."
+        />
+      </div>
+    ) : items.length === 0 ? (
+      <div class="wrap">
+        <EmptyState
+          title="Nothing closing this week."
+          body="Every open listing on the board has a deadline further than seven days out, or is rolling with no fixed date. The full board is one tap away."
+        />
+      </div>
+    ) : (
+      <div class="wrap">
+        <section class="sec">
+          <div class="feed">
+            {items.map((l) => <EntryRow listing={l} now={now} />)}
+          </div>
+        </section>
+      </div>
+    )
+  }
+</Base>
+
+<style>
+  .head {
+    padding-top: var(--space-8);
+  }
+  .rule {
+    height: 2px;
+    background: var(--ink);
+    margin-bottom: var(--space-6);
+  }
+  .wire-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-5);
+    padding-bottom: var(--space-4);
+    border-bottom: 2px solid var(--ink);
+    margin-bottom: var(--space-5);
+    flex-wrap: wrap;
+  }
+  .wire-title {
+    font-size: var(--text-h1);
+    line-height: 1.08;
+    letter-spacing: -0.01em;
+  }
+  .wire-note {
+    font-size: var(--text-meta);
+    color: var(--body);
+  }
+  .sec {
+    padding-top: var(--space-6);
+  }
+  @media (max-width: 640px) {
+    .wire-title {
+      font-size: var(--text-h2);
+    }
+  }
+</style>

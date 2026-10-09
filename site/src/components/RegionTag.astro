@@ -1,0 +1,76 @@
+---
+/**
+ * RegionTag.astro — the three region tiers.
+ *
+ * The tiers encode Nigeria-first: solid accent reads as foregrounded,
+ * outlined ink as second tier, muted band as standing background. Pass
+ * `onDark` for the Closing Soon block, where the light fills would glare.
+ */
+interface Props {
+  /** 'nigeria' | 'africa' | 'global' — an unknown value falls back to the muted tier. */
+  region: string;
+  /** Render the dark-surface variants (near-black Closing Soon card). */
+  onDark?: boolean;
+}
+
+const { region, onDark = false } = Astro.props;
+
+const key = region === 'nigeria' || region === 'africa' || region === 'global' ? region : 'global';
+const label = key.charAt(0).toUpperCase() + key.slice(1);
+---
+
+<span class:list={['region', `region-${key}`, onDark && 'is-on-dark']}>{label}</span>
+
+<style>
+  .region {
+    display: inline-flex;
+    align-items: center;
+    flex: none;
+    height: 22px;
+    padding: 0 var(--space-2);
+    border: 1px solid transparent;
+    border-radius: var(--radius-pill);
+    font-family: var(--font-sans);
+    font-size: var(--text-label);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    line-height: 1;
+  }
+
+  /* Solid accent — foregrounded, first class. */
+  .region-nigeria {
+    background: var(--region-nigeria-bg);
+    color: var(--region-nigeria-fg);
+  }
+
+  /* Outlined ink — second tier. */
+  .region-africa {
+    background: transparent;
+    color: var(--region-africa-fg);
+    border-color: var(--region-africa-border);
+  }
+
+  /* Muted band — third tier, standing items. */
+  .region-global {
+    background: var(--region-global-bg);
+    color: var(--region-global-fg);
+  }
+
+  /* ---- dark surface (Closing Soon) ---- */
+  .region.is-on-dark.region-nigeria {
+    /* Nigeria stays solid on the near-black card: it is the board's own tier. */
+    background: var(--region-nigeria-bg);
+    color: var(--region-nigeria-fg);
+  }
+  .region.is-on-dark.region-africa {
+    background: transparent;
+    color: var(--on-dark-meta);
+    border-color: var(--body-2);
+  }
+  .region.is-on-dark.region-global {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--on-dark-meta);
+  }
+</style>

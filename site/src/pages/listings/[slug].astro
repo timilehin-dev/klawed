@@ -1,0 +1,336 @@
+---
+/**
+ * Listing detail — a single wide row-card expanded (design-language §6).
+ *
+ * Title (h1, Newsreader), org, region tag, deadline badge, eligibility stated
+ * plainly, the summary, and ONE primary Apply button to the direct link
+ * (rel="noopener"). No comments, no related-listing spam.
+ *
+ * Past-deadline listings are not live surfaces: loadBySlug() returns null for
+ * them, so they 404 cleanly instead of serving a stale Apply button. An unknown
+ * slug 404s the same way.
+ *
+ * Under `output: 'server'` the slug is resolved at request time from the
+ * database — no getStaticPaths(), which Astro would ignore in server mode.
+ */
+import Base from '../../layouts/Base.astro';
+import { loadBySlug } from '../../lib/listings';
+import { siteUrl } from '../../lib/env';
+import { toKebab } from '../../lib/category-map';
+import {
+  deadlineState,
+  daysLeft,
+  formatClosesDate,
+  formatDayMonth,
+  formatFilingTime,
+  isNew,
+} from '../../lib/format';
+
+const { slug } = Astro.params;
+const now = new Date();
+const listing = await loadBySlug(slug ?? '', now);
+
+if (!listing) {
+  return Astro.rewrite('/404');
+}
+
+const state = deadlineState(listing.deadline, listing.evergreen, now);
+const canonical = new URL(`/listings/${listing.slug}`, siteUrl()).href;
+const categoryKebab = toKebab(listing.category);
+
+const days = listing.deadline ? daysLeft(listing.deadline, now) : 0;
+const deadlineCopy =
+  state === 'rolling'
+    ? 'Rolling — no fixed closing date.'
+    : state === 'today'
+      ? 'Closes today.'
+      : state === 'closing'
+        ? `${days} ${days === 1 ? 'day' : 'days'} left.`
+        : `${formatClosesDate(listing.deadline as Date)}.`;
+
+const badgeCopy =
+  state === 'rolling'
+    ? 'Rolling'
+    : state === 'today'
+      ? 'Closes today'
+      : state === 'closing'
+        ? `${days} ${days === 1 ? 'day' : 'days'} left`
+        : formatClosesDate(listing.deadline as Date);
+---
+
+<Base
+  title={`${listing.title} — klawhub`}
+  description={listing.summary.slice(0, 160)}
+  now={now}
+>
+  <Fragment slot="head">
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content={listing.title} />
+    <meta property="og:description" content={listing.summary} />
+    <meta property="og:url" content={canonical} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={listing.title} />
+    <meta name="twitter:description" content={listing.summary} />
+  </Fragment>
+
+  <div class="wrap">
+    <article class="detail">
+      <p class="back">
+        <a href={`/${categoryKebab}`}>← {categoryKebab} desk</a>
+      </p>
+
+      {
+        isNew(listing.createdAt, now) && (
+          <p class="new-flag">Filed this week</p>
+        )
+      }
+
+      <header class="detail-head">
+        <p class="org">{listing.org}</p>
+        <h1 class="title">{listing.title}</h1>
+        <div class="tags">
+          <span class={`region region-${listing.region}`}>{listing.region}</span>
+          <span class={`badge badge-${state}`}>{badgeCopy}</span>
+        </div>
+      </header>
+
+      <dl class="facts">
+        <div class="fact">
+          <dt>Who it is for</dt>
+          <dd>{listing.eligibility}</dd>
+        </div>
+        <div class="fact">
+          <dt>Deadline</dt>
+          <dd>{deadlineCopy}</dd>
+        </div>
+        <div class="fact">
+          <dt>Filed</dt>
+          <dd>
+            {formatDayMonth(listing.createdAt)}, {formatFilingTime(listing.createdAt)} WAT
+          </dd>
+        </div>
+        <div class="fact">
+          <dt>Category</dt>
+          <dd>
+            <a href={`/${categoryKebab}`}>{categoryKebab}</a>
+          </dd>
+        </div>
+      </dl>
+
+      <section class="body-copy">
+        <h2>What it is</h2>
+        <p>{listing.summary}</p>
+      </section>
+
+      <div class="apply-row">
+        <a class="apply" href={listing.link} rel="noopener" target="_blank">
+          Apply
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+            ><path d="M5 12h13"></path><path d="M13 7l5 5-5 5"></path></svg
+          >
+        </a>
+        <p class="apply-note">Opens the org's own page. Every link is checked before it is filed.</p>
+      </div>
+    </article>
+  </div>
+</Base>
+
+<style>
+  /* ── region tag (design-language §5.4) ────────────────────── */
+  .region {
+    display: inline-flex;
+    align-items: center;
+    height: 24px;
+    padding: 0 10px;
+    border-radius: var(--radius-pill);
+    font-size: var(--text-badge);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .region-nigeria {
+    background: var(--region-nigeria-bg);
+    color: var(--region-nigeria-fg);
+  }
+  .region-africa {
+    background: transparent;
+    color: var(--region-africa-fg);
+    border: 1px solid var(--region-africa-border);
+  }
+  .region-global {
+    background: var(--region-global-bg);
+    color: var(--region-global-fg);
+  }
+
+  /* ── deadline badge (design-language §5.3) ────────────────── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    height: 26px;
+    padding: 0 12px;
+    border-radius: var(--radius-pill);
+    font-size: var(--text-badge);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+  .badge-safe {
+    background: var(--band);
+    color: var(--deadline-safe);
+  }
+  .badge-closing {
+    background: var(--closing-bg);
+    color: var(--closing-fg);
+    border: 1px solid var(--closing-border);
+  }
+  .badge-today {
+    background: var(--ink);
+    color: var(--white);
+  }
+  .badge-rolling {
+    background: transparent;
+    color: var(--rolling-fg);
+    border: 1px solid var(--rolling-border);
+  }
+
+  /* ── the detail page ──────────────────────────────────────── */
+  .detail {
+    padding: var(--space-8) 0 var(--space-6);
+    max-width: 760px;
+  }
+  .back {
+    font-size: var(--text-meta);
+    color: var(--body);
+    margin-bottom: var(--space-6);
+  }
+  .back a {
+    color: var(--body-2);
+  }
+  .back a:hover {
+    color: var(--ink);
+  }
+  .new-flag {
+    display: inline-flex;
+    align-items: center;
+    height: 22px;
+    padding: 0 8px;
+    border-radius: var(--radius-pill);
+    background: var(--accent-tint);
+    color: var(--accent-strong);
+    font-size: var(--text-badge);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    margin-bottom: var(--space-3);
+  }
+  .org {
+    font-family: var(--font-sans);
+    font-size: var(--text-meta);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--body);
+  }
+  .title {
+    font-family: var(--font-display);
+    font-size: var(--text-h1);
+    font-weight: 500;
+    line-height: 1.08;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    margin-top: var(--space-2);
+  }
+  .tags {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    margin-top: var(--space-5);
+    padding-bottom: var(--space-5);
+    border-bottom: 1px solid var(--hairline);
+  }
+  .facts {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-5);
+    margin-top: var(--space-6);
+  }
+  .fact dt {
+    font-size: var(--text-label);
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--body);
+  }
+  .fact dd {
+    font-size: var(--text-body);
+    color: var(--ink-2);
+    line-height: 1.55;
+    margin-top: var(--space-1);
+  }
+  .fact dd a {
+    color: var(--accent);
+  }
+  .body-copy {
+    margin-top: var(--space-8);
+  }
+  .body-copy h2 {
+    font-size: var(--text-h3);
+    color: var(--ink);
+    margin-bottom: var(--space-3);
+  }
+  .body-copy p {
+    font-size: var(--text-body);
+    color: var(--body-2);
+    line-height: 1.7;
+  }
+  .apply-row {
+    margin-top: var(--space-8);
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--hairline);
+  }
+  .apply {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    height: 44px;
+    padding: 0 24px;
+    border-radius: var(--radius-pill);
+    background: var(--accent);
+    color: var(--white);
+    font-family: var(--font-sans);
+    font-size: var(--text-chip);
+    font-weight: 500;
+    transition: background var(--dur) var(--ease);
+  }
+  .apply:hover {
+    background: var(--accent-strong);
+  }
+  .apply-note {
+    font-size: var(--text-meta);
+    color: var(--body);
+    margin-top: var(--space-3);
+  }
+  @media (max-width: 640px) {
+    .facts {
+      grid-template-columns: 1fr;
+      gap: var(--space-4);
+    }
+    .title {
+      font-size: var(--text-h2);
+    }
+    .apply {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+</style>

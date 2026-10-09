@@ -1,0 +1,32 @@
+---
+/**
+ * Clock.astro — the thin-line deadline glyph.
+ *
+ * Used inside the closing / today deadline badges only, where a countdown is
+ * being read. Everywhere else the badge carries its words and the clock is
+ * noise, so it stays out (design-language §4: icons only where they aid
+ * scanning).
+ */
+interface Props {
+  /** Rendered edge length in px. Defaults to the badge size. */
+  size?: number;
+}
+
+const { size = 14 } = Astro.props;
+---
+
+<svg
+  width={size}
+  height={size}
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="1.6"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  aria-hidden="true"
+  focusable="false"
+>
+  <circle cx="12" cy="12" r="9"></circle>
+  <path d="M12 7.5v5l3.2 1.9"></path>
+</svg>

@@ -1,0 +1,134 @@
+---
+/**
+ * NewsletterSignup.astro — one email field, one button.
+ *
+ * Presentational only: the submit handler prevents default and does nothing
+ * else, because there is no mail endpoint yet (Buttondown/Brevo is a later
+ * task). It is never an interstitial — the field sits quietly in the newsletter
+ * block with the cadence stated in one honest line.
+ */
+---
+
+<section class="newsletter" aria-labelledby="newsletter-title">
+  <h2 class="newsletter-title" id="newsletter-title">The wire, in your inbox each weekday</h2>
+  <p class="newsletter-copy">
+    One dispatch at 07:00 WAT: what was filed overnight and what is about to close. Nothing else, and one
+    click to leave.
+  </p>
+
+  <form class="newsrow" novalidate>
+    <label class="news-label" for="newsletter-email">Email address</label>
+    <input
+      class="news-input"
+      id="newsletter-email"
+      name="email"
+      type="email"
+      autocomplete="email"
+      placeholder="you@example.com"
+      required
+    />
+    <button class="news-btn" type="submit">Subscribe</button>
+  </form>
+</section>
+
+<script>
+  // No endpoint yet. Prevent the default form navigation so the field behaves
+  // like a real control instead of dumping the visitor on a ?email= URL.
+  const form = document.querySelector('form.newsrow');
+  form?.addEventListener('submit', (event) => event.preventDefault());
+</script>
+
+<style>
+  .newsletter {
+    background: var(--band);
+    border-radius: var(--radius-card-lg);
+    padding: var(--space-6);
+    max-width: 680px;
+  }
+
+  .newsletter-title {
+    font-family: var(--font-display);
+    font-size: var(--text-h3);
+    font-weight: 500;
+    line-height: 1.16;
+    color: var(--ink);
+  }
+
+  .newsletter-copy {
+    font-size: var(--text-body-sm);
+    color: var(--body);
+    margin-top: var(--space-3);
+    max-width: 52ch;
+    line-height: 1.6;
+  }
+
+  .newsrow {
+    display: flex;
+    gap: var(--space-3);
+    margin-top: var(--space-5);
+  }
+
+  /* Real label, visually hidden: the input must be labelled for a11y, but the
+     placeholder carries the visual cue. */
+  .news-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .news-input {
+    flex: 1;
+    min-width: 0;
+    height: 44px;
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-input);
+    padding: 0 var(--space-4);
+    background: var(--base);
+    font-family: var(--font-sans);
+    font-size: var(--text-body-sm);
+    color: var(--ink-2);
+    transition: border-color var(--dur) var(--ease);
+  }
+  .news-input::placeholder {
+    color: var(--body);
+  }
+  .news-input:hover {
+    border-color: var(--body);
+  }
+
+  .news-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    height: 44px;
+    padding: 0 var(--space-5);
+    border: none;
+    border-radius: var(--radius-pill);
+    background: var(--accent);
+    color: var(--white);
+    font-family: var(--font-sans);
+    font-size: var(--text-meta);
+    font-weight: 500;
+    cursor: pointer;
+    transition: background var(--dur) var(--ease);
+  }
+  .news-btn:hover {
+    background: var(--accent-strong);
+  }
+
+  @media (max-width: 640px) {
+    .newsrow {
+      flex-direction: column;
+    }
+    .news-btn {
+      width: 100%;
+    }
+  }
+</style>

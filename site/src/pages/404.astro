@@ -1,0 +1,94 @@
+---
+/**
+ * 404 — humanised and quiet. Links back to the board. No invented listings,
+ * no error codes in the copy.
+ */
+import Base from '../layouts/Base.astro';
+import { siteUrl } from '../lib/env';
+
+const now = new Date();
+---
+
+<Base title="Not found — klawhub" description="That page is not on the wire." now={now}>
+  <div class="wrap">
+    <section class="nf">
+      <div class="rule"></div>
+      <p class="eyebrow">Off the wire</p>
+      <h1 class="section-title">
+        <span class="tone-1">Nothing here</span> <span class="tone-2">under that address.</span>
+      </h1>
+      <p class="lede">
+        This page is not on the board. A listing may have closed and moved to the archive, or the
+        address may have been mistyped.
+      </p>
+      <div class="links">
+        <a class="btn" href="/">Back to the board</a>
+        <a class="btn btn-secondary" href="/closing-soon">Closing soon</a>
+        <a class="btn btn-secondary" href="/archive">The archive</a>
+      </div>
+      <p class="quiet">
+        If a link you followed here is broken, it helps to know: <a href="mailto:links@klawhub.xyz"
+          >links@klawhub.xyz</a
+        >.
+      </p>
+    </section>
+  </div>
+</Base>
+
+<style>
+  .nf {
+    padding: var(--space-10) 0 var(--space-6);
+    max-width: 62ch;
+  }
+  .rule {
+    height: 2px;
+    background: var(--ink);
+    margin-bottom: var(--space-6);
+  }
+  .lede {
+    margin-top: var(--space-4);
+  }
+  .links {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-top: var(--space-6);
+    flex-wrap: wrap;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 44px;
+    padding: 0 24px;
+    border-radius: var(--radius-pill);
+    background: var(--accent);
+    color: var(--white);
+    font-family: var(--font-sans);
+    font-size: var(--text-chip);
+    font-weight: 500;
+    transition: background var(--dur) var(--ease);
+  }
+  .btn:hover {
+    background: var(--accent-strong);
+  }
+  .btn-secondary {
+    background: var(--base);
+    color: var(--ink);
+    border: 1px solid var(--ink);
+  }
+  .btn-secondary:hover {
+    background: var(--band);
+  }
+  .quiet {
+    font-size: var(--text-meta);
+    color: var(--body);
+    margin-top: var(--space-6);
+  }
+  .quiet a {
+    color: var(--accent);
+  }
+  .quiet a:hover {
+    color: var(--accent-strong);
+  }
+</style>

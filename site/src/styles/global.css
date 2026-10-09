@@ -1,0 +1,182 @@
+/*
+ * klawed global styles — the shared primitives every page and component builds on.
+ *
+ * All colour, type, spacing and radius values come from tokens.css. Tailwind v4
+ * is available for layout utilities only; anything the token set covers is
+ * expressed through the variables so there is exactly one place to change a
+ * colour.
+ */
+
+@import './tokens.css';
+
+/* Expose the token set to Tailwind v4 so utilities and variables agree. */
+@theme {
+  --color-base: var(--base);
+  --color-band: var(--band);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-body: var(--body);
+  --color-body-2: var(--body-2);
+  --color-hairline: var(--hairline);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-tint: var(--accent-tint);
+
+  --font-display: var(--font-display);
+  --font-sans: var(--font-sans);
+
+  --radius-card: var(--radius-card);
+  --radius-card-lg: var(--radius-card-lg);
+  --radius-input: var(--radius-input);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  /* Light by default, always. No prefers-color-scheme hijack (design-language §1). */
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  background: var(--base);
+  color: var(--ink-2);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+ul,
+ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+}
+
+p {
+  margin: 0;
+}
+
+svg {
+  display: block;
+}
+
+/* ---- layout primitives ---- */
+
+.wrap {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+@media (max-width: 640px) {
+  .wrap {
+    padding: 0 20px;
+  }
+}
+
+/* ---- the two-tone heading device (design-language §3, exact) ---- */
+
+.tone-1 {
+  color: var(--ink);
+}
+
+.tone-2 {
+  color: var(--body);
+}
+
+/* ---- shared type roles ---- */
+
+.eyebrow {
+  font-family: var(--font-sans);
+  font-size: var(--text-label);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--body);
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-size: var(--text-h1);
+  font-weight: 500;
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+}
+
+.lede {
+  font-size: var(--text-lead);
+  line-height: 1.6;
+  color: var(--body);
+}
+
+.meta {
+  font-size: var(--text-meta);
+  line-height: 1.5;
+  color: var(--body);
+}
+
+/* Tabular figures wherever a number is filed, counted, or counted down. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- focus: 2px accent ring at 2px offset, never removed (design-language §9) ---- */
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-pill);
+}
+
+/* ---- skip link ---- */
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  background: var(--ink);
+  color: var(--white);
+  padding: var(--space-2) var(--space-4);
+  border-radius: 0 0 var(--radius-input) 0;
+  font-size: var(--text-meta);
+}
+
+.skip-link:focus {
+  left: 0;
+}
+
+/* ---- reduced motion: all transitions and transforms off (design-language §8) ---- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}

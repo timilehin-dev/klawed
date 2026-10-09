@@ -1,0 +1,421 @@
+---
+/**
+ * Base.astro — the shell every page renders inside.
+ *
+ * Carries: the type pairing (loaded once), the dateline bar, the sticky category
+ * filter bar with live counts, the skip link, and the footer. The footer holds
+ * the ONE permitted accent use beyond buttons/tags (design-language §5.8).
+ *
+ * Variant C "The Wire" is a dated dispatch: the dateline and the compiled
+ * timestamp are load-bearing chrome, not decoration.
+ */
+import '../styles/global.css';
+import { CATEGORIES } from '../lib/category-map';
+import {
+  formatDatelineDate,
+  formatWatTime,
+  plural,
+} from '../lib/format';
+import { siteUrl } from '../lib/env';
+
+interface Props {
+  title: string;
+  description?: string;
+  /** Total live listings for the dateline; null while the board is loading. */
+  total?: number | null;
+  /** Live count per public category slug, for the chip bar. */
+  counts?: Record<string, number>;
+  /** Listings closing within seven days, for the "closing soon" chip. */
+  closingCount?: number;
+  /** Which chip is active: a category kebab, 'closing-soon', 'archive', or 'home'. */
+  surface?: string;
+  /** The date this page was compiled — injectable so pages render one instant. */
+  now?: Date;
+}
+
+const {
+  title,
+  description = 'A dated dispatch of real openings for builders — jobs, grants, hackathons, visas and the free tools worth having. Nigeria first, then Africa, then global.',
+  total = null,
+  counts,
+  closingCount = 0,
+  surface = 'home',
+  now = new Date(),
+} = Astro.props;
+
+const origin = siteUrl();
+const canonical = new URL(Astro.url.pathname, origin).href;
+
+const categoryLinks = CATEGORIES.map((c) => ({
+  href: `/${c.kebab}`,
+  label: c.label,
+  count: counts?.[c.kebab] ?? 0,
+}));
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+
+    <!-- Type pairing, loaded once (design-language §3). -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..700;1,6..72,300..600&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta name="twitter:card" content="summary_large_image" />
+  </head>
+
+  <body>
+    <a class="skip-link" href="#board">Skip to the board</a>
+
+    <!-- ── dateline ───────────────────────────────────────────── -->
+    <div class="dateline">
+      <div class="wrap dateline-in">
+        <span class="dateline-left"
+          ><b>The Wire</b><span class="dateline-sep">·</span>klawed dispatch<span
+            class="dateline-sep">·</span
+          >Lagos, WAT</span
+        >
+        <span class="dateline-right tabular" aria-live="polite">
+          {formatDatelineDate(now)} · {formatWatTime(now)}
+          {
+            total === null
+              ? ''
+              : ` · ${total} open${closingCount > 0 ? ` · ${closingCount} closing this week` : ''}`
+          }
+        </span>
+      </div>
+    </div>
+
+    <!-- ── sticky filter bar ──────────────────────────────────── -->
+    <div class="topbar">
+      <div class="wrap topbar-in">
+        <a class="wordmark" href="/">
+          klawhub<span class="wordmark-tag">opportunities, klawed first</span>
+        </a>
+
+        <nav class="chips" aria-label="Filter by category">
+          <a
+            class:list={['chip', surface === 'home' && 'is-active']}
+            href="/"
+            aria-current={surface === 'home' ? 'page' : undefined}
+          >
+            All{total !== null && <span class="count tabular">{total}</span>}
+          </a>
+
+          {
+            categoryLinks.map((c) => (
+              <a
+                class:list={['chip', surface === c.href.slice(1) && 'is-active']}
+                href={c.href}
+                aria-current={surface === c.href.slice(1) ? 'page' : undefined}
+              >
+                {c.label}
+                <span class="count tabular">{c.count}</span>
+              </a>
+            ))
+          }
+
+          <a
+            class:list={['chip', 'chip-closing', surface === 'closing-soon' && 'is-active']}
+            href="/closing-soon"
+            aria-current={surface === 'closing-soon' ? 'page' : undefined}
+          >
+            closing soon<span class="count tabular">{closingCount}</span>
+          </a>
+        </nav>
+      </div>
+    </div>
+
+    <main id="board">
+      <slot />
+    </main>
+
+    <!-- ── footer ─────────────────────────────────────────────── -->
+    <footer>
+      <div class="wrap foot">
+        <div class="foot-brand">
+          <p class="foot-word">klawhub</p>
+          <div class="foot-rule"></div>
+          <p class="foot-tag">
+            The wire, filed from Lagos. Written by a bot, approved by a person.
+          </p>
+        </div>
+
+        <nav class="foot-cols" aria-label="Footer">
+          <div class="foot-col">
+            <h2 class="foot-head">Categories</h2>
+            <ul>
+              {categoryLinks.slice(0, 5).map((c) => <li><a href={c.href}>{c.label}</a></li>)}
+            </ul>
+          </div>
+          <div class="foot-col">
+            <h2 class="foot-head">More</h2>
+            <ul>
+              {categoryLinks.slice(5).map((c) => <li><a href={c.href}>{c.label}</a></li>)}
+              <li><a href="/archive">archive</a></li>
+            </ul>
+          </div>
+          <div class="foot-col">
+            <h2 class="foot-head">The wire</h2>
+            <ul>
+              <li><a href="/about">About</a></li>
+              <li><a href="/about#rules">How listings are checked</a></li>
+              <li><a href="/#newsletter">Newsletter</a></li>
+            </ul>
+          </div>
+        </nav>
+      </div>
+
+      <div class="wrap">
+        <p class="footprint">
+          Every listing is checked before it is filed. If a link breaks, it comes down the same
+          day — <a class="accent-link" href="mailto:links@klawhub.xyz">report a dead link</a>.
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>
+
+<style>
+  /* ── dateline ─────────────────────────────────────────────── */
+  .dateline {
+    border-bottom: 1px solid var(--hairline);
+    background: var(--base);
+  }
+  .dateline-in {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    height: 40px;
+    font-size: 13px;
+    color: var(--body);
+    line-height: 1;
+  }
+  .dateline-left {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .dateline-left b {
+    color: var(--ink-2);
+    font-weight: 600;
+  }
+  .dateline-sep {
+    color: var(--hairline);
+  }
+  .dateline-right {
+    color: var(--body);
+    text-align: right;
+  }
+  @media (max-width: 720px) {
+    .dateline-right {
+      display: none;
+    }
+  }
+
+  /* ── sticky filter bar ────────────────────────────────────── */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: var(--base);
+    border-bottom: 1px solid var(--hairline);
+  }
+  .topbar-in {
+    display: flex;
+    align-items: center;
+    gap: var(--space-5);
+    height: 56px;
+  }
+  .wordmark {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+    flex: none;
+    line-height: 1;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .wordmark-tag {
+    font-family: var(--font-sans);
+    font-weight: 400;
+    color: var(--body);
+    font-size: 13px;
+    letter-spacing: 0;
+  }
+  @media (max-width: 900px) {
+    .wordmark-tag {
+      display: none;
+    }
+  }
+
+  .chips {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow-x: auto;
+    flex: 1;
+    min-width: 0;
+    scrollbar-width: none;
+  }
+  .chips::-webkit-scrollbar {
+    display: none;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    height: 34px;
+    padding: 0 13px;
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-pill);
+    background: var(--base);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-2);
+    white-space: nowrap;
+    flex: none;
+    transition:
+      background var(--dur) var(--ease),
+      border-color var(--dur) var(--ease),
+      color var(--dur) var(--ease);
+  }
+  .chip:hover {
+    border-color: var(--body);
+    color: var(--ink);
+  }
+  .chip .count {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--band);
+    color: var(--body);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 22px;
+    text-align: center;
+    margin-left: 7px;
+  }
+  .chip-closing {
+    border-color: var(--closing-border);
+    background: var(--closing-bg);
+    color: var(--closing-fg);
+  }
+  .chip-closing .count {
+    background: rgba(255, 255, 255, 0.6);
+    color: var(--closing-fg);
+  }
+  .chip.is-active {
+    background: var(--ink);
+    color: var(--white);
+    border-color: var(--ink);
+  }
+  .chip.is-active .count {
+    background: rgba(255, 255, 255, 0.18);
+    color: var(--white);
+  }
+
+  /* ── footer ───────────────────────────────────────────────── */
+  footer {
+    margin-top: var(--space-12);
+    border-top: 1px solid var(--hairline);
+    padding: var(--space-8) 0;
+  }
+  .foot {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-8);
+    flex-wrap: wrap;
+  }
+  .foot-brand {
+    flex: 1 1 240px;
+  }
+  .foot-word {
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1;
+  }
+  .foot-rule {
+    width: 32px;
+    height: 2px;
+    background: var(--accent);
+    margin-top: 10px;
+  }
+  .foot-tag {
+    font-size: var(--text-meta);
+    color: var(--body);
+    margin-top: var(--space-3);
+    max-width: 30ch;
+    line-height: 1.6;
+  }
+  .foot-cols {
+    display: flex;
+    gap: var(--space-10);
+    flex-wrap: wrap;
+  }
+  .foot-head {
+    font-family: var(--font-sans);
+    font-size: var(--text-label);
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+    margin-bottom: var(--space-3);
+  }
+  .foot-col ul {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+  .foot-col a {
+    font-size: var(--text-meta);
+    color: var(--body);
+    transition: color var(--dur) var(--ease);
+  }
+  .foot-col a:hover {
+    color: var(--ink);
+  }
+  .footprint {
+    font-size: var(--text-meta);
+    color: var(--body-2);
+    margin-top: var(--space-8);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--hairline);
+  }
+  .accent-link {
+    color: var(--accent);
+    border-bottom: 1px solid var(--accent);
+  }
+  .accent-link:hover {
+    color: var(--accent-strong);
+    border-color: var(--accent-strong);
+  }
+
+  @media (max-width: 720px) {
+    .topbar-in {
+      gap: var(--space-4);
+    }
+    .foot-cols {
+      gap: var(--space-8);
+    }
+  }
+</style>

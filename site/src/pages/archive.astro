@@ -1,0 +1,164 @@
+---
+/**
+ * Archive — expired listings, kept not deleted (TRD §3: expiry is a
+ * render-time filter, never a destructive delete). Muted rows with a
+ * strikethrough "Closed <date>". Empty when nothing has closed yet.
+ */
+import Base from '../layouts/Base.astro';
+import EmptyState from '../components/EmptyState.astro';
+import RefreshState from '../components/RefreshState.astro';
+import { loadBoard } from '../lib/listings';
+import { formatLongDate, formatClosedDate, plural } from '../lib/format';
+
+const now = new Date();
+const board = await loadBoard(now);
+const items = board.archive;
+---
+
+<Base
+  title="Archive — klawhub"
+  description="Listings whose deadline has passed. Kept in the archive, not deleted."
+  total={board.total}
+  counts={board.counts}
+  closingCount={board.closingSoon.length}
+  surface="archive"
+  now={now}
+>
+  <div class="wrap">
+    <header class="head">
+      <div class="rule"></div>
+      <div class="wire-head">
+        <h1 class="section-title wire-title">
+          <span class="tone-1">Filed and closed</span> <span class="tone-2">— kept, not deleted.</span>
+        </h1>
+        <span class="wire-note">
+          {items.length} {plural(items.length, 'listing', 'listings')} in the archive · {formatLongDate(now)}
+        </span>
+      </div>
+    </header>
+  </div>
+
+  {
+    board.unreachable ? (
+      <div class="wrap">
+        <RefreshState
+          title="The board is being refreshed."
+          body="The archive could not reach the database just now. Try again in a minute or two."
+        />
+      </div>
+    ) : items.length === 0 ? (
+      <div class="wrap">
+        <EmptyState
+          title="Nothing has closed yet."
+          body="No listing on the board has reached its deadline, so the archive is empty. Closed listings stay here after they expire — they are kept, not deleted."
+        />
+      </div>
+    ) : (
+      <div class="wrap">
+        <section class="sec">
+          <div class="archive-list">
+            {
+              items.map((l) => (
+                <div class="archive-row">
+                  <div class="archive-main">
+                    <p class="archive-title">{l.title}</p>
+                    <p class="archive-meta">
+                      {l.org} · {l.category} · {l.region}
+                    </p>
+                  </div>
+                  <span class="archive-closed">{formatClosedDate(l.deadline as Date)}</span>
+                </div>
+              ))
+            }
+          </div>
+          <p class="archive-note">
+            Closed listings stay on the record. A past deadline is not deleted — it moves off the live
+            board and into this archive, which is why a link you filed last month is still findable.
+          </p>
+        </section>
+      </div>
+    )
+  }
+</Base>
+
+<style>
+  .head {
+    padding-top: var(--space-8);
+  }
+  .rule {
+    height: 2px;
+    background: var(--ink);
+    margin-bottom: var(--space-6);
+  }
+  .wire-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-5);
+    padding-bottom: var(--space-4);
+    border-bottom: 2px solid var(--ink);
+    margin-bottom: var(--space-5);
+    flex-wrap: wrap;
+  }
+  .wire-title {
+    font-size: var(--text-h1);
+    line-height: 1.08;
+    letter-spacing: -0.01em;
+  }
+  .wire-note {
+    font-size: var(--text-meta);
+    color: var(--body);
+  }
+  .sec {
+    padding-top: var(--space-6);
+  }
+  .archive-list {
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-card);
+    padding: var(--space-3) var(--space-6);
+  }
+  .archive-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-5);
+    padding: var(--space-4) 0;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .archive-row:last-child {
+    border-bottom: 0;
+  }
+  .archive-title {
+    font-size: var(--text-body);
+    font-weight: 500;
+    color: var(--body-2);
+    line-height: 1.4;
+  }
+  .archive-meta {
+    font-size: var(--text-meta);
+    color: var(--body);
+    margin-top: var(--space-1);
+  }
+  .archive-closed {
+    flex: none;
+    color: var(--expired-fg);
+    text-decoration: line-through;
+    font-size: var(--text-meta);
+  }
+  .archive-note {
+    font-size: var(--text-meta);
+    color: var(--body);
+    margin-top: var(--space-6);
+    max-width: 68ch;
+    line-height: 1.6;
+  }
+  @media (max-width: 640px) {
+    .wire-title {
+      font-size: var(--text-h2);
+    }
+    .archive-row {
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+  }
+</style>
