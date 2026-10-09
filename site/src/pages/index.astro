@@ -17,6 +17,7 @@
  * and the DB-unreachable board each render their own intentional state.
  */
 import Base from '../layouts/Base.astro';
+import Sidebar from '../components/Sidebar.astro';
 import EntryRow from '../components/EntryRow.astro';
 import ClosingSoon from '../components/ClosingSoon.astro';
 import DayHeader from '../components/DayHeader.astro';
@@ -27,7 +28,6 @@ import ArchiveStrip from '../components/ArchiveStrip.astro';
 import { loadBoard, frontPage } from '../lib/listings';
 import { REGIONS } from '../lib/category-map';
 import {
-  formatDayMonth,
   dayKey,
   formatLongDate,
   formatWatTime,
@@ -128,19 +128,10 @@ const regionGroups = REGIONS.map((region) => {
                 </p>
               </div>
 
-              <aside class="disp-right">
-                <h4>In this week's issue</h4>
-                {
-                  sidebar.map((l) => (
-                    <a class="disp-item" href={`/listings/${l.slug}`}>
-                      <p class="disp-item-t">{l.title}</p>
-                      <p class="disp-item-m">
-                        {l.category} · {l.region} · filed {formatDayMonth(l.createdAt)}
-                      </p>
-                    </a>
-                  ))
-                }
-              </aside>
+              {/* The sidebar component exists for exactly this — the markup used
+                  to be inlined here, which also leaked the raw DB enum value
+                  (ai_credits) into the UI instead of the kebab form. */}
+              <Sidebar listings={sidebar} />
             </div>
           </header>
         </div>
@@ -271,42 +262,6 @@ const regionGroups = REGIONS.map((region) => {
     color: var(--ink-2);
     font-weight: 600;
   }
-  .disp-right {
-    border-left: 1px solid var(--hairline);
-    padding-left: var(--space-8);
-  }
-  .disp-right h4 {
-    font-family: var(--font-sans);
-    font-size: var(--text-label);
-    font-weight: 500;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--ink-2);
-    padding-bottom: var(--space-3);
-    border-bottom: 1px solid var(--hairline);
-  }
-  .disp-item {
-    display: block;
-    padding: var(--space-4) 0;
-    border-bottom: 1px solid var(--hairline);
-  }
-  .disp-item-t {
-    font-family: var(--font-display);
-    font-size: var(--text-lead);
-    font-weight: 500;
-    line-height: 1.25;
-    color: var(--ink);
-    transition: color var(--dur) var(--ease);
-  }
-  .disp-item-t:hover {
-    color: var(--accent);
-  }
-  .disp-item-m {
-    font-size: var(--text-meta);
-    color: var(--body);
-    margin-top: var(--space-1);
-  }
-
   /* ── about block on the home page ─────────────────────────── */
   .about {
     border: 1px solid var(--hairline);
@@ -346,7 +301,7 @@ const regionGroups = REGIONS.map((region) => {
     .disp-body {
       grid-template-columns: 1fr;
     }
-    .disp-right {
+    .issue {
       border-left: 0;
       padding-left: 0;
       border-top: 1px solid var(--hairline);

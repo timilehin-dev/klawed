@@ -53,15 +53,21 @@ test('isoWeek: 9 October 2026 is week 41 (measured)', () => {
 });
 
 test('isoWeek: week 42 starts the Monday after', () => {
-  assert.equal(isoWeek(new Date('2026-10-12T00:00:00Z')), 42);
-  assert.equal(isoWeek(new Date('2026-10-18T23:59:59Z')), 42);
+  // Both instants are Monday 12 Oct or later in Lagos, and still inside week 42.
+  assert.equal(isoWeek(new Date('2026-10-12T00:00:00Z')), 42); // 01:00 Mon in WAT
+  assert.equal(isoWeek(new Date('2026-10-18T22:00:00Z')), 42); // 23:00 Sun in WAT, still wk 42
 });
 
-test('isoWeek: a WAT-local late Sunday still counts the ISO week of its own UTC date', () => {
-  // 23:59 UTC Sunday 11 Oct is already Monday morning in WAT, but isoWeek is
-  // defined on the UTC calendar day, so it stays 41 — that is the behaviour
-  // the board's "Week 41" issue number relies on.
-  assert.equal(isoWeek(new Date('2026-10-11T23:59:59Z')), 41);
+test('isoWeek: a WAT-local late Sunday counts the week it DISPLAYS, not its UTC date', () => {
+  // 23:59 UTC Sunday 11 Oct is already Monday morning in Lagos, and the dateline
+  // beside the issue number renders that Monday. So the issue number must be the
+  // Monday's week (42), not the UTC Sunday's (41) — otherwise the masthead prints
+  // "Mon 12 Oct 2026 · Week 41", which is self-contradictory.
+  //
+  // This test previously asserted 41, on the belief that the board relied on the
+  // UTC day. It does not: every other date on the page renders in WAT, so the
+  // week number has to as well.
+  assert.equal(isoWeek(new Date('2026-10-11T23:59:59Z')), 42);
 });
 
 test('isoWeek: year boundaries follow the ISO rule (week 1 holds the first Thursday)', () => {
@@ -254,4 +260,29 @@ test('escapeAttr also neutralises an attribute-breakout payload', () => {
 test('escapeAttr caps length so a title cannot bloat the head', () => {
   assert.equal(escapeAttr('x'.repeat(500), 160).length, 160);
   assert.equal(escapeAttr('short').length, 5);
+});
+
+test('isoWeek agrees with the WAT dateline at a week boundary', () => {
+  // 23:30 UTC on Sunday 11 Oct is already Monday 12 Oct in Lagos. A UTC-derived
+  // week printed 41 next to a dateline reading "Mon 12 Oct 2026", whose real ISO
+  // week is 42. The issue number and the date it sits beside must agree.
+  const lateSundayUtc = new Date('2026-10-11T23:30:00Z');
+  assert.equal(formatDatelineDate(lateSundayUtc), 'Mon 12 Oct 2026');
+  assert.equal(isoWeek(lateSundayUtc), 42);
+
+  // And it must match the week of the equivalent instant already in Monday WAT.
+  const mondayWat = new Date('2026-10-12T00:30:00Z');
+  assert.equal(isoWeek(lateSundayUtc), isoWeek(mondayWat));
+});
+
+test('isoWeek still matches known ISO boundaries', () => {
+  for (const [iso, week] of [
+    ['2026-01-01', 1],
+    ['2024-02-29', 9],
+    ['2021-01-01', 53],
+    ['2026-12-31', 53],
+    ['2026-10-09', 41],
+  ]) {
+    assert.equal(isoWeek(new Date(`${iso}T12:00:00Z`)), week, `isoWeek(${iso})`);
+  }
 });

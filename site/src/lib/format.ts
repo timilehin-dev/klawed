@@ -101,11 +101,28 @@ export function formatFilingTime(d: Date): string {
 /**
  * ISO week number, used as the masthead issue number ("Week 41"). ISO weeks
  * start Monday; week 1 is the week containing the year's first Thursday.
+ *
+ * Computed on the LAGOS calendar, not the UTC one. The dateline beside this
+ * number renders in WAT, so the two must agree: at 23:30 UTC on a Sunday the
+ * board is already showing Monday in Lagos, and a UTC-derived week number would
+ * print the previous week next to the next day's date.
+ *
+ * Verified against known ISO boundaries: 2026-01-01 → 1, 2024-02-29 → 9,
+ * 2021-01-01 → 53, 2026-12-31 → 53.
  */
 export function isoWeek(d: Date): number {
-  // Work on a UTC-normalised copy of the date so the timezone cannot shift the
-  // week boundary.
-  const date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  // Resolve the instant to its Lagos calendar date first, then do the ISO week
+  // arithmetic on those Y/M/D parts. Intl gives the wall-clock date in the zone,
+  // which is what "this week" means to a reader in Lagos.
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    timeZone: TZ,
+  }).formatToParts(d);
+  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value);
+  const date = new Date(Date.UTC(get('year'), get('month') - 1, get('day')));
+
   const dayNum = date.getUTCDay() === 0 ? 7 : date.getUTCDay();
   date.setUTCDate(date.getUTCDate() + 4 - dayNum);
   const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
