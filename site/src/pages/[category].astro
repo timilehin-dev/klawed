@@ -23,7 +23,7 @@ import RefreshState from '../components/RefreshState.astro';
 import ArchiveStrip from '../components/ArchiveStrip.astro';
 import { loadCategory } from '../lib/listings';
 import { CATEGORIES, REGIONS } from '../lib/category-map';
-import { formatDayMonth, formatLongDate, plural } from '../lib/format';
+import { formatDayMonth, formatLongDate, plural, dayKey } from '../lib/format';
 
 const { category } = Astro.params;
 const def = CATEGORIES.find((c) => c.kebab === category);
@@ -42,7 +42,7 @@ const regionGroups = REGIONS.map((region) => {
   if (entries.length === 0) return null;
   const days: { date: Date; items: typeof entries }[] = [];
   for (const entry of entries) {
-    let day = days.find((d) => formatDayMonth(d.date) === formatDayMonth(entry.createdAt));
+    let day = days.find((d) => dayKey(d.date) === dayKey(entry.createdAt));
     if (!day) {
       day = { date: entry.createdAt, items: [] };
       days.push(day);

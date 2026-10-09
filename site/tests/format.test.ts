@@ -21,6 +21,7 @@ const {
   isExpired,
   plural,
   formatDayMonth,
+  dayKey,
   formatDow,
   formatWeekday,
   formatLongDate,
@@ -204,4 +205,30 @@ test('formatDatelineDate combines the day, date and year', () => {
 test('formatClosesDate and formatClosedDate render the badges', () => {
   assert.equal(formatClosesDate(new Date('2026-11-12T12:00:00Z')), 'Closes 12 Nov');
   assert.equal(formatClosedDate(new Date('2026-11-01T12:00:00Z')), 'Closed 1 Nov');
+});
+
+test('dayKey buckets by the Lagos day, never by the UTC day', () => {
+  // 23:30 UTC is 00:30 the NEXT day in Lagos. Grouping on the UTC date would
+  // file this under the wrong day header than the one it renders under.
+  const lateUtc = new Date('2026-10-09T23:30:00Z');
+  assert.equal(lateUtc.toISOString().slice(0, 10), '2026-10-09'); // the UTC day
+  assert.equal(dayKey(lateUtc), '2026-10-10'); // the day it actually renders as
+  assert.equal(formatDayMonth(lateUtc), '10 Oct'); // the header it appears under
+});
+
+test('dayKey separates the same day-month in different years', () => {
+  // "9 Oct" alone would collapse a year of filings into one day header.
+  const y2025 = new Date('2025-10-09T10:00:00Z');
+  const y2026 = new Date('2026-10-09T10:00:00Z');
+  assert.equal(formatDayMonth(y2025), formatDayMonth(y2026)); // same label
+  assert.notEqual(dayKey(y2025), dayKey(y2026)); // different buckets
+  assert.equal(dayKey(y2025), '2025-10-09');
+  assert.equal(dayKey(y2026), '2026-10-09');
+});
+
+test('dayKey sorts chronologically as strings', () => {
+  const keys = ['2026-10-09', '2025-12-31', '2026-01-02'].map(
+    (s) => dayKey(new Date(`${s}T12:00:00Z`)),
+  );
+  assert.deepEqual([...keys].sort(), ['2025-12-31', '2026-01-02', '2026-10-09']);
 });

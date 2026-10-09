@@ -36,6 +36,28 @@ export function formatLongDate(d: Date): string {
   });
 }
 
+/**
+ * A stable grouping key for a filing day, in the board's timezone.
+ *
+ * Use this — never `toISOString().slice(0, 10)` — to bucket listings under day
+ * headers or to decide whether something was "filed today". toISOString is UTC,
+ * so a listing filed at 23:30 UTC would be filed under 00:30 the NEXT day in
+ * Lagos yet bucket under the previous date. Every key here is WAT, matching what
+ * formatDayMonth actually renders.
+ *
+ * The year is included so two listings filed "9 Oct" a year apart do not
+ * collapse into one day header.
+ */
+export function dayKey(d: Date): string {
+  // en-CA renders YYYY-MM-DD, which sorts lexicographically as well as by date.
+  return new Intl.DateTimeFormat('en-CA', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    timeZone: TZ,
+  }).format(d);
+}
+
 /** "07:10" — the dateline and compile clock, always WAT. */
 export function formatWatTime(d: Date): string {
   return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: TZ });

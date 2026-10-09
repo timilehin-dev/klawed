@@ -28,6 +28,7 @@ import { loadBoard, frontPage } from '../lib/listings';
 import { REGIONS } from '../lib/category-map';
 import {
   formatDayMonth,
+  dayKey,
   formatLongDate,
   formatWatTime,
   isoWeek,
@@ -40,9 +41,7 @@ const now = new Date();
 const board = await loadBoard(now);
 
 const sidebar = board.unreachable ? [] : frontPage(board, 5);
-const filedToday = board.live.filter(
-  (l) => formatDayMonth(l.createdAt) === formatDayMonth(now),
-).length;
+const filedToday = board.live.filter((l) => dayKey(l.createdAt) === dayKey(now)).length;
 
 /* Nigeria-first region groups, each holding its own distinct filing days. */
 const regionGroups = REGIONS.map((region) => {
@@ -50,7 +49,7 @@ const regionGroups = REGIONS.map((region) => {
   if (entries.length === 0) return null;
   const days: { date: Date; items: typeof entries }[] = [];
   for (const entry of entries) {
-    let day = days.find((d) => formatDayMonth(d.date) === formatDayMonth(entry.createdAt));
+    let day = days.find((d) => dayKey(d.date) === dayKey(entry.createdAt));
     if (!day) {
       day = { date: entry.createdAt, items: [] };
       days.push(day);
