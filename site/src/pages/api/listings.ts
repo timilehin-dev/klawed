@@ -92,6 +92,43 @@ async function readJsonBody(request: Request): Promise<{ ok: true; value: unknow
   }
 }
 
+/**
+ * A collision-resistant id in Prisma's cuid() shape.
+ *
+ * The schema declares `slug String @unique` (non-nullable), and the slug is
+ * derived from the id. Generating the id here lets the slug be written in the
+ * same INSERT — no backfill, no window where a row has no resolvable URL.
+ * Shape matters more than provenance: it only needs to be unique, URL-safe, and
+ * stable as a slug suffix. crypto.randomUUID is the strongest source available
+ * in the runtime.
+ */
+function createCuid(): string {
+  const time = Date.now().toString(36);
+  const rand = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
+  const counter = crypto.randomBytes(4).toString('hex');
+  return `c${time}${rand}${counter}`;
+}
+
+/**
+ * A one-line, safe description of a database error for the server log.
+ *
+ * Deliberately narrow: the Prisma error code and the first line of the message.
+ * Never the connection string, never the request body, never the API key. TRD §9
+ * wants a diagnosable outage without turning Vercel's logs into a leak.
+ */
+function dbErrorSummary(error: unknown): string {
+  if (error instanceof Error) {
+    // Prisma's validation errors carry `name` but no `code`, and their first
+    // line is the whole diagnosis ("Argument `slug` is missing."). A missing
+    // message would log a blank line, which is worse than no log at all.
+    const code = (error as { code?: string }).code;
+    const first = error.message.split('\n').filter((l) => l.trim().length > 0)[0]?.slice(0, 200);
+    if (!first) return code ?? error.name ?? 'unknown error';
+    return code ? `${code}: ${first}` : first;
+  }
+  return 'unknown error';
+}
+
 export const POST: APIRoute = async ({ request }) => {
   // --- auth: before anything else touches the body ---
   if (!authorized(presentedKey(request))) {
@@ -138,16 +175,29 @@ export const POST: APIRoute = async ({ request }) => {
       select: { id: true },
     });
     if (existing) return jsonResponse({ error: 'duplicate' }, 409);
-  } catch {
-    // Never a stack trace into the response (TRD §9 posture).
+  } catch (error) {
+    // The client gets a code, never a stack trace (TRD §9). The server log gets
+    // the error code and message — enough to diagnose a DB outage, and never the
+    // API key or the request body.
+    console.error('[api/listings] duplicate check failed:', dbErrorSummary(error));
     return jsonResponse({ error: 'db_unavailable' }, 503);
   }
 
   // --- write, from the whitelist only ---
+  // The id is generated here rather than by the database so the slug can be
+  // derived from it in the SAME write. `slug` is non-nullable and unique in the
+  // schema, so a two-step "insert, then backfill the slug" would either violate
+  // the constraint or need a nullable column. One write, no window where a row
+  // exists without a resolvable URL.
+  const id = createCuid();
+  const slug = makeSlug(input.title, id);
+
   let created: { id: string };
   try {
     created = await prisma.listing.create({
       data: {
+        id,
+        slug,
         title: input.title,
         org: input.org,
         category: categorySnake as never,
@@ -162,21 +212,12 @@ export const POST: APIRoute = async ({ request }) => {
       },
       select: { id: true },
     });
-  } catch {
+  } catch (error) {
+    console.error('[api/listings] create failed:', dbErrorSummary(error));
     return jsonResponse({ error: 'db_unavailable' }, 503);
   }
 
-  // The slug needs the id, and the id needs the row — a second write, not a
-  // random suffix, so the slug is deterministic from what was actually stored
-  // (TRD §6: slug is generated at ingest).
-  try {
-    const slug = makeSlug(input.title, created.id);
-    await prisma.listing.update({ where: { id: created.id }, data: { slug } });
-  } catch {
-    return jsonResponse({ error: 'db_unavailable' }, 503);
-  }
-
-  return jsonResponse({ id: created.id, status: 'live' }, 201);
+  return jsonResponse({ id: created.id, slug, status: 'live' }, 201);
 };
 
 // Only POST is accepted (TRD §4). Astro 404s unmatched methods by default; the
