@@ -1,0 +1,34 @@
+{
+  "name": "klawed-site",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "description": "klawhub.xyz (klawed) — the opportunities board. Astro + Tailwind + Prisma + Content API.",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "prisma generate && astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "check": "astro check",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate deploy",
+    "prisma:studio": "prisma studio",
+    "seed": "node prisma/seed.mjs",
+    "test": "node --test tests/"
+  },
+  "dependencies": {
+    "@astrojs/vercel": "^8.1.0",
+    "@prisma/client": "^6.2.0",
+    "astro": "^5.2.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.0",
+    "prisma": "^6.2.0",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

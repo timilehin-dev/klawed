@@ -1,0 +1,82 @@
+// klawed — Prisma schema. Implements TRD.md §3 exactly.
+//
+// Enum values are snake_case at the database level (ai_credits, student_deals).
+// The API, the URLs and the front end all speak kebab-case (ai-credits,
+// student-deals). The mapping lives in exactly one module — src/lib/category-map.ts
+// — and nothing re-derives it.
+//
+// Connection: the Vercel Postgres (Neon) integration provides POSTGRES_PRISMA_URL
+// (pooled, for the running app) and POSTGRES_URL_NON_POOLING (direct, for
+// migrations). Neon's pooled endpoint is PgBouncer and cannot run
+// `migrate deploy`, which is why directUrl is required, not optional.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("POSTGRES_PRISMA_URL")
+  directUrl = env("POSTGRES_URL_NON_POOLING")
+}
+
+// The ten categories. A new listing type is a new value here plus a lane in
+// category-map.ts — never a schema rewrite (PRD §4, TRD §3).
+enum Category {
+  jobs
+  remote
+  hackathons
+  grants
+  accelerators
+  visas
+  scholarships
+  internships
+  ai_credits
+  student_deals
+}
+
+// Drives Nigeria-first ordering (PRD §7.9): nigeria → africa → global.
+enum Region {
+  nigeria
+  africa
+  global
+}
+
+// `live` is the only state on the public board. `expired` is set by the archive
+// job for past deadlines (render-time filter, never a destructive delete —
+// TRD §3). `draft` exists for builder-side seeds and manual curation only.
+enum Status {
+  draft
+  live
+  expired
+}
+
+model Listing {
+  id String @id @default(cuid())
+
+  // --- the PRD §3 fields, exactly ---
+  title       String
+  org         String
+  category    Category
+  deadline    DateTime? // null only when evergreen is true
+  evergreen   Boolean   @default(false)
+  eligibility String
+  link        String
+  region      Region
+  summary     String
+
+  // --- system fields ---
+  status    Status   @default(live)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // --- extensibility seam ---
+  // New listing types add a nullable column here (or a JSON bag) and a field in
+  // category-map.ts. Nothing in the render path or the API contract changes for
+  // existing categories, because the API builds its row from a whitelist.
+  slug String @unique
+
+  @@index([category, region])
+  @@index([status, deadline])
+  @@index([createdAt])
+}
