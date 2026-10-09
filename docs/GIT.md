@@ -32,3 +32,16 @@ git remote add origin https://github.com/<owner>/klawhub.git
 git push -u origin main
 ```
 Then connect that same repo to Vercel so `main` auto-deploys.
+
+## How bots push (verified working method)
+
+Do NOT use `-c http.extraheader="Authorization: token ..."` for git push — the shell
+mangles the header and git returns `remote: invalid credentials` even with a valid token.
+Use the credential-helper pattern instead (GITHUB_TOKEN lives in the profile's .env):
+
+```bash
+cd /c/Users/HP/klaw
+git -c credential.helper='!f() { echo "username=timilehin-dev"; echo "password=$GITHUB_TOKEN"; }; f' push origin main
+```
+
+The REST API (curl) accepts the token as a plain header — only git push needs the helper.
