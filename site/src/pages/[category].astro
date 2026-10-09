@@ -1,19 +1,19 @@
 ---
 /**
- * Category pages — one route per category, generated from the CATEGORIES enum
- * (docs/EXTENSIBILITY.md: "a new category is a page with no hand-written file").
+ * The single dynamic top-level route: /<slug>.
  *
- * Same wire composition as the home page, minus the sidebar: a two-tone desk
- * masthead ("Jobs desk, 14 open."), the note line ("/jobs · filtered to ..."),
- * then date headers + EntryRows grouped inside each Nigeria-first region, and
- * the archive strip for anything that has closed on this desk.
+ * It serves BOTH a category desk (/jobs, /ai-credits) and a region desk
+ * (/nigeria, /africa, /global). A category is one CATEGORIES row plus an enum
+ * value (docs/EXTENSIBILITY.md) and a region is one of three fixed values, so
+ * neither needs its own page file.
  *
- * An unknown slug returns a clean 404. Empty and DB-unreachable states render
- * intentionally. Zero mock data — everything is loadCategory().
+ * It cannot be two files: `[category].astro` and `[region].astro` are both
+ * single-segment dynamic routes in SSR mode, and Astro cannot disambiguate
+ * /nigeria between them — it warns on the build today and hard-errors later.
  *
- * Under `output: 'server'` every route renders on demand, so the category set is
- * validated at request time from CATEGORIES (below) rather than enumerated in a
- * getStaticPaths() — which Astro would ignore in server mode.
+ * Same wire composition either way: a two-tone desk masthead, entries filed
+ * under date headers, and the archive strip. Under `output: 'server'` the slug is
+ * validated at request time and an unknown one rewrites to /404.
  */
 import Base from '../layouts/Base.astro';
 import EntryRow from '../components/EntryRow.astro';
@@ -21,23 +21,60 @@ import DayHeader from '../components/DayHeader.astro';
 import EmptyState from '../components/EmptyState.astro';
 import RefreshState from '../components/RefreshState.astro';
 import ArchiveStrip from '../components/ArchiveStrip.astro';
-import { loadCategory } from '../lib/listings';
-import { CATEGORIES, REGIONS } from '../lib/category-map';
-import { formatDayMonth, formatLongDate, plural, dayKey } from '../lib/format';
+import { loadCategory, loadRegion } from '../lib/listings';
+import { CATEGORIES, REGIONS, isRegion } from '../lib/category-map';
+import { formatLongDate, dayKey } from '../lib/format';
 
-const { category } = Astro.params;
-const def = CATEGORIES.find((c) => c.kebab === category);
+const { category: slug } = Astro.params;
 
-if (!def) {
+/** Which kind of desk this slug names — or neither, for a 404. */
+const def = CATEGORIES.find((c) => c.kebab === slug) ?? null;
+const regionDesk = slug !== undefined && isRegion(slug);
+
+if (!def && !regionDesk) {
   return Astro.rewrite('/404');
 }
 
 /* One instant for the whole render. */
 const now = new Date();
-const board = await loadCategory(def.kebab, now);
+const board = regionDesk ? await loadRegion(slug!, now) : await loadCategory(def!.kebab, now);
 
 const count = board.total;
-const regionGroups = REGIONS.map((region) => {
+
+/** Region-desk copy. A category desk takes its own from the registry. */
+const REGION_COPY: Record<string, { desk: string; note: string; empty: string }> = {
+  nigeria: {
+    desk: 'Nigeria desk',
+    note: 'open to builders in Nigeria, filed first',
+    empty:
+      'No Nigerian listings are live right now. When one is filed and checks out, it leads this board.',
+  },
+  africa: {
+    desk: 'Africa desk',
+    note: 'open across the continent, after Nigeria',
+    empty:
+      'No Africa-wide listings are live right now. When one is filed and checks out, it appears here.',
+  },
+  global: {
+    desk: 'Global desk',
+    note: 'open to anyone, anywhere',
+    empty: 'No global listings are live right now. When one is filed and checks out, it appears here.',
+  },
+};
+
+const deskName = def ? def.label : REGION_COPY[slug!].desk;
+const deskNote = def
+  ? `/${def.kebab} · the desk, filed by day`
+  : `/${slug} · ${REGION_COPY[slug!].note}`;
+const emptyTitle = def
+  ? `Nothing open on the ${def.label} desk.`
+  : `Nothing open on the ${REGION_COPY[slug!].desk.toLowerCase()}.`;
+const emptyBody = def
+  ? `No ${def.label} listings are live right now. When one is filed and checks out, it appears here with a direct link and a stated deadline.`
+  : REGION_COPY[slug!].empty;
+
+/** Region groups, Nigeria-first, each holding its own distinct filing days. */
+const regionGroups = (regionDesk ? [slug!] : REGIONS).map((region) => {
   const entries = board.live.filter((l) => l.region === region);
   if (entries.length === 0) return null;
   const days: { date: Date; items: typeof entries }[] = [];
@@ -54,12 +91,12 @@ const regionGroups = REGIONS.map((region) => {
 ---
 
 <Base
-  title={`${def.label} desk — klawhub`}
-  description={`Open ${def.label} opportunities for builders, Nigeria first. Every listing carries a direct link, a real deadline and stated eligibility.`}
+  title={`${deskName} — klawhub`}
+  description="Open opportunities for builders, filed by day. Every listing carries a direct link, a real deadline and stated eligibility."
   total={count}
   counts={board.counts}
   closingCount={board.closingSoon.length}
-  surface={def.kebab}
+  surface={slug}
   now={now}
 >
   <div class="wrap">
@@ -67,10 +104,9 @@ const regionGroups = REGIONS.map((region) => {
       <div class="rule" />
       <div class="wire-head">
         <h1 class="section-title wire-title">
-          <span class="tone-1">{def.label} desk,</span>{' '}
-          <span class="tone-2">{count} open.</span>
+          <span class="tone-1">{deskName},</span> <span class="tone-2">{count} open.</span>
         </h1>
-        <span class="wire-note">/{def.kebab} · the desk, filed by day · {formatLongDate(now)}</span>
+        <span class="wire-note">{deskNote} · {formatLongDate(now)}</span>
       </div>
     </header>
   </div>
@@ -80,15 +116,12 @@ const regionGroups = REGIONS.map((region) => {
       <div class="wrap">
         <RefreshState
           title="The board is being refreshed."
-          body={`The ${def.label} desk could not reach the database just now. Nothing is filed onto the wire until it comes back — try again in a minute or two.`}
+          body={`The ${deskName} could not reach the database just now. Nothing is filed onto the wire until it comes back — try again in a minute or two.`}
         />
       </div>
     ) : count === 0 ? (
       <div class="wrap">
-        <EmptyState
-          title={`Nothing open on the ${def.label} desk.`}
-          body={`No ${def.label} listings are live right now. When one is filed and checks out, it appears here with a direct link and a stated deadline.`}
-        />
+        <EmptyState title={emptyTitle} body={emptyBody} />
       </div>
     ) : (
       <div class="wrap">
@@ -110,7 +143,16 @@ const regionGroups = REGIONS.map((region) => {
             ))
           }
 
-          {board.archive.length > 0 && <ArchiveStrip listings={board.archive} />}
+          {board.archive.length > 0 && (
+            <section class="sec">
+              <div class="archive">
+                <p class="archive-head">
+                  Filed and closed — {board.archive.length} kept in the archive
+                </p>
+                <ArchiveStrip listings={board.archive} />
+              </div>
+            </section>
+          )}
         </section>
       </div>
     )
@@ -147,6 +189,20 @@ const regionGroups = REGIONS.map((region) => {
   }
   .sec {
     padding-top: var(--space-6);
+  }
+  .archive {
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-card);
+    padding: var(--space-5) var(--space-6);
+    margin-top: var(--space-6);
+  }
+  .archive-head {
+    font-size: var(--text-label);
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--body);
+    margin-bottom: var(--space-3);
   }
   @media (max-width: 640px) {
     .wire-title {

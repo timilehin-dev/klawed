@@ -29,9 +29,12 @@ const filedThisWeek = listings.filter((l) => isNew(l.createdAt, now)).length;
   listings.length > 0 && (
     <section class="closing" aria-labelledby="closing-title">
       <div class="closing-head">
-        <h3 class="closing-title" id="closing-title">
+        {/* h2, not h3: this block sits directly under the masthead h1, and an
+            h1 -> h3 jump skips a level (design-language §9). The titles inside
+            are h3, matching the main feed's EntryRow. */}
+        <h2 class="closing-title" id="closing-title">
           <span class="tone-1 is-on-dark">Closing soon</span> <span class="tone-2 is-on-dark">— under seven days.</span>
-        </h3>
+        </h2>
         <span class="closing-note tabular">
           {listings.length} open · {filedThisWeek} filed this week
         </span>
@@ -40,7 +43,7 @@ const filedThisWeek = listings.filter((l) => isNew(l.createdAt, now)).length;
       <div class="closing-grid">
         {listings.map((listing) => (
           <a class="citem" href={`/listings/${listing.slug}`}>
-            <h4 class="citem-t">{listing.title}</h4>
+            <h3 class="citem-t">{listing.title}</h3>
             <p class="citem-m">
               {listing.org} · {toKebab(listing.category)} · {listing.region} · filed{' '}
               {formatDayMonth(listing.createdAt)}
@@ -64,13 +67,6 @@ const filedThisWeek = listings.filter((l) => isNew(l.createdAt, now)).length;
     padding: var(--space-6);
     color: var(--white);
     margin-top: var(--space-6);
-    /*
-      The approved mockup scopes --on-dark-meta in its own :root; the committed
-      tokens.css does not carry it, and this layer may not edit that file. It is
-      declared here, once, at the dark block's root — exactly the subtree that
-      needs it (this card, plus the on-dark RegionTag pills rendered inside).
-    */
-    --on-dark-meta: #a1a1aa;
   }
 
   .closing-head {
@@ -136,10 +132,13 @@ const filedThisWeek = listings.filter((l) => isNew(l.createdAt, now)).length;
   }
 
   .citem-sum {
-    font-size: var(--text-meta);
-    color: var(--body);
-    margin-top: 7px;
-    line-height: 1.5;
+    /* --on-dark-body (#d4d4d8, ~13:1 on the ink block). --body (#71717a) is
+       only ~4.1:1 here, under the §9 floor; design-language §9 also bars small
+       body copy from --body outright. */
+    font-size: var(--text-body-sm);
+    color: var(--on-dark-body);
+    margin-top: var(--space-2);
+    line-height: 1.55;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     line-clamp: 2;

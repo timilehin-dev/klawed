@@ -14,7 +14,7 @@
 import type { Prisma } from '@prisma/client';
 import { getPrisma } from './prisma';
 import { isExpired } from './format';
-import { CATEGORIES, REGIONS, toSnake, toKebab } from './category-map';
+import { CATEGORIES, REGIONS, toSnake, toKebab, isRegion } from './category-map';
 
 /** The display shape every component consumes. */
 export interface ListingView {
@@ -192,6 +192,49 @@ export async function loadCategory(category: string, now: Date): Promise<Board> 
   return { live, closingSoon, archive, counts, total: live.length, unreachable: false };
 }
 
+/**
+ * Listings for one region — the region filter in the top bar (design-language
+ * §6.1). The board's ordering thesis is Nigeria-first, so those links must
+ * resolve to a real view rather than sitting in the chrome as decoration.
+ *
+ * `region` is the lowercase slug: 'nigeria' | 'africa' | 'global'.
+ */
+export async function loadRegion(region: string, now: Date): Promise<Board> {
+  if (!isRegion(region)) return emptyBoard(false);
+
+  const prisma = getPrisma();
+  if (!prisma) return emptyBoard(true);
+
+  let rows;
+  try {
+    rows = await prisma.listing.findMany({
+      where: { ...LIVE_WHERE, region: region as never },
+      select: SELECT,
+    });
+  } catch {
+    return emptyBoard(true);
+  }
+
+  const views = rows.map(toView);
+  const live: ListingView[] = [];
+  const archive: ListingView[] = [];
+  for (const v of views) {
+    if (isExpired(v.deadline, v.evergreen, now)) archive.push(v);
+    else live.push(v);
+  }
+  // Already single-region, but keep the canonical comparator so the ordering
+  // rule lives in one place.
+  live.sort(compareListings);
+  archive.sort((a, b) => (b.deadline?.getTime() ?? 0) - (a.deadline?.getTime() ?? 0));
+
+  const closingSoon = live.filter((v) => {
+    if (!v.deadline || v.evergreen) return false;
+    const ms = v.deadline.getTime() - now.getTime();
+    return ms > 0 && ms <= 7 * 86_400_000;
+  });
+
+  return { live, closingSoon, archive, counts: {}, total: live.length, unreachable: false };
+}
 /** One listing by slug, for the detail page. */
 export async function loadBySlug(slug: string, now: Date): Promise<ListingView | null> {
   const prisma = getPrisma();

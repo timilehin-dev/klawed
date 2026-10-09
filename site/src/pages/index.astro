@@ -88,12 +88,38 @@ const regionGroups = REGIONS.map((region) => {
                 compiled {formatWatTime(now)} WAT, every link checked by hand
               </p>
             </div>
+            <div class="disp-body">
+              <div class="disp-left">
+                {/* The masthead h1 is the page's top-level heading in every state.
+                    It used to live only in the populated branch, so the empty
+                    board shipped with no h1 at all and a screen reader landed on
+                    "Nothing filed yet." as the page title (design-language §9). */}
+                <h1 class="display">
+                  <span class="tone-1">Opportunities,</span> <span class="tone-2">klawed first.</span>
+                </h1>
+                <p class="lede">
+                  A weekly dispatch of real openings for builders — jobs, grants, hackathons, visas and
+                  the free tools worth having. Nigeria first, then Africa, then global.
+                </p>
+                <p class="livestatus">
+                  <b>No open opportunities yet</b> · the next dispatch goes out as soon as something
+                  checks out
+                </p>
+              </div>
+              <Sidebar listings={[]} />
+            </div>
           </header>
         </div>
         <EmptyState
           title="Nothing filed yet."
           body="The wire is quiet right now — no listings are live on the board. That is a data state, not an error. The next dispatch goes out as soon as something checks out."
         />
+        {/* Mounted here as well as in the populated branch: the footer links to
+            /#newsletter, and a link that only resolves once the board has
+            listings is a dead end on the state most first-time visitors see. */}
+        <div class="wrap">
+          <NewsletterSignup />
+        </div>
       </>
     ) : (
       <>
@@ -311,6 +337,19 @@ const regionGroups = REGIONS.map((region) => {
   @media (max-width: 900px) {
     .sec {
       padding-top: var(--space-10);
+    }
+  }
+  /* --text-display steps 64 -> 48 -> 36 at 1280 / 900 / 640 (design-language §3).
+     The 48 and 36 steps were missing, so a tablet-width column held a 64px serif
+     tagline. Values are literal because §3 defines the steps as px, not tokens. */
+  @media (max-width: 1280px) {
+    .display {
+      font-size: 48px;
+    }
+  }
+  @media (max-width: 900px) {
+    .display {
+      font-size: 48px;
     }
   }
   @media (max-width: 640px) {

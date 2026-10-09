@@ -143,7 +143,7 @@ const ids = process.argv.slice(1).filter(Boolean);
 ' "$ID" "$BEARER_ID" "$EV_ID"
 
 echo; echo "--- 8. PAGES RENDER (empty board, warm server) ---"
-for path in "/" "/jobs" "/ai-credits" "/student-deals" "/closing-soon" "/archive" "/about" "/no-such-page"; do
+for path in "/" "/jobs" "/ai-credits" "/student-deals" "/closing-soon" "/archive" "/about" "/nigeria" "/africa" "/global" "/no-such-page"; do
   g=$(get "$path"); printf "  %-18s HTTP %s  %s bytes\n" "$path" "${g%%|*}" "${g#*|}"
 done
 if grep -qiE "being refreshed|undefined|NaN|\[object Object\]" "$OUT/page.html" 2>/dev/null; then

@@ -75,6 +75,22 @@ verifier or poster — they are category-agnostic.
 
 **5. Commit.** The diff is two added lines and one migration.
 
+## Regions live in the same dynamic route
+
+`src/pages/[category].astro` serves **both** a category desk (`/jobs`,
+`/ai-credits`) and a region desk (`/nigeria`, `/africa`, `/global`). A region is
+one of three fixed values, so it needs no page file either.
+
+It cannot be two files. `[category].astro` and `[region].astro` are both
+single-segment dynamic routes in SSR mode, and Astro cannot disambiguate
+`/nigeria` between them — it warns on the build and hard-errors in a later
+version. The route therefore checks `CATEGORIES` first, falls back to `isRegion`,
+and rewrites anything else to `/404`.
+
+A **new region** is likewise a data change: one value in `REGIONS` (which is also
+the Nigeria-first sort order), one row in the route's `REGION_COPY`, and one link
+in the top bar's region filter.
+
 ## What a new type must NOT require
 
 - Editing `src/pages/index.astro` — the home board is category-agnostic.

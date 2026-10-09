@@ -137,6 +137,15 @@ const categoryLinks = CATEGORIES.map((c) => ({
             closing soon<span class="count tabular">{closingCount}</span>
           </a>
         </nav>
+
+        {/* design-language §6.1: the region filter sits at the bar's right as
+            small text links. The ordering thesis of this board is Nigeria-first,
+            so it must be visible in the chrome, not only inferable from tags. */}
+        <nav class="regionfilter" aria-label="Filter by region">
+          <a href="/nigeria" aria-current={surface === 'nigeria' ? 'page' : undefined}>Nigeria</a>
+          <a href="/africa" aria-current={surface === 'africa' ? 'page' : undefined}>Africa</a>
+          <a href="/global" aria-current={surface === 'global' ? 'page' : undefined}>Global</a>
+        </nav>
       </div>
     </div>
 
@@ -183,7 +192,7 @@ const categoryLinks = CATEGORIES.map((c) => ({
       <div class="wrap">
         <p class="footprint">
           Every listing is checked before it is filed. If a link breaks, it comes down the same
-          day — <a class="accent-link" href="mailto:links@klawhub.xyz">report a dead link</a>.
+          day — <a class="report-link" href="mailto:links@klawhub.xyz">report a dead link</a>.
         </p>
       </div>
     </footer>
@@ -280,9 +289,12 @@ const categoryLinks = CATEGORIES.map((c) => ({
     display: none;
   }
   .chip {
+    /* 36px per design-language §5.2 (and the 36px a11y floor for chips). The
+       bar is the site's primary navigation — eleven standalone links, not part
+       of a larger clickable row — so the row-card exemption does not apply. */
     display: inline-flex;
     align-items: center;
-    height: 34px;
+    height: 36px;
     padding: 0 13px;
     border: 1px solid var(--hairline);
     border-radius: var(--radius-pill);
@@ -303,14 +315,17 @@ const categoryLinks = CATEGORIES.map((c) => ({
     color: var(--ink);
   }
   .chip .count {
-    width: 22px;
-    height: 22px;
+    /* 24px circle per §5.2, and --body-2 rather than --body: #71717a on the
+       #f4f4f5 fill measures 4.40:1, under the §9 4.5:1 floor, and this is the
+       number a builder scans the bar for. --body-2 is ~7:1. */
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
     background: var(--band);
-    color: var(--body);
+    color: var(--body-2);
     font-size: 11px;
     font-weight: 600;
-    line-height: 22px;
+    line-height: 24px;
     text-align: center;
     margin-left: 7px;
   }
@@ -331,6 +346,34 @@ const categoryLinks = CATEGORIES.map((c) => ({
   .chip.is-active .count {
     background: rgba(255, 255, 255, 0.18);
     color: var(--white);
+  }
+
+  /* ── region filter (design-language §6.1, small text links at the right) ── */
+  .regionfilter {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    flex: none;
+    font-size: 13px;
+    color: var(--body);
+  }
+  .regionfilter a {
+    color: var(--body);
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid transparent;
+    transition:
+      color var(--dur) var(--ease),
+      border-color var(--dur) var(--ease);
+  }
+  .regionfilter a:hover {
+    color: var(--ink);
+  }
+  /* The active region is marked in ink with an accent underline — the region
+     thesis belongs to the accent, and Nigeria-first is the one ordering rule. */
+  .regionfilter a[aria-current='page'] {
+    color: var(--ink);
+    font-weight: 500;
+    border-bottom-color: var(--accent);
   }
 
   /* ── footer ───────────────────────────────────────────────── */
@@ -402,13 +445,20 @@ const categoryLinks = CATEGORIES.map((c) => ({
     padding-top: var(--space-4);
     border-top: 1px solid var(--hairline);
   }
-  .accent-link {
-    color: var(--accent);
-    border-bottom: 1px solid var(--accent);
+  /* The footer gets ONE saturated accent use, and design-language §5.8 offers a
+     choice: the 2px rule under the wordmark, or one accent link — not both. The
+     rule is the wordmark's anchor, so this link stays ink and is distinguished by
+     an underline instead. */
+  .report-link {
+    color: var(--ink-2);
+    border-bottom: 1px solid var(--hairline);
+    transition:
+      color var(--dur) var(--ease),
+      border-color var(--dur) var(--ease);
   }
-  .accent-link:hover {
-    color: var(--accent-strong);
-    border-color: var(--accent-strong);
+  .report-link:hover {
+    color: var(--ink);
+    border-color: var(--ink);
   }
 
   @media (max-width: 720px) {

@@ -25,6 +25,14 @@
   --accent-strong: #0a6238; /* hover / pressed */
   --accent-tint: #eaf5ee; /* very light flat accent wash — flat fill, never a gradient */
 
+  /* ---- On-dark text (the one sanctioned near-black block) ---- */
+  /* Used only inside the Closing-Soon block (--ink fill). Contrast on #0b0b0b:
+     --on-dark-meta ~7.7:1, --on-dark-body ~13:1 — both clear the §9 floor, which
+     --body (#71717a, ~4.1:1 on ink) does not. These are the values the approved
+     Variant C mockup used; they belong here rather than declared locally. */
+  --on-dark-meta: #a1a1aa; /* meta lines, org · category · filed stamps */
+  --on-dark-body: #d4d4d8; /* summaries and reading copy on the dark block */
+
   /* ---- Deadline urgency (semantic; deliberately NOT the accent) ---- */
   --deadline-safe: var(--body); /* >7 days — quiet neutral gray text */
   --rolling-fg: var(--body-2); /* evergreen "Rolling" — quiet, outlined */
