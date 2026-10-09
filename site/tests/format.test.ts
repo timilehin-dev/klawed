@@ -22,6 +22,7 @@ const {
   plural,
   formatDayMonth,
   dayKey,
+  escapeAttr,
   formatDow,
   formatWeekday,
   formatLongDate,
@@ -231,4 +232,26 @@ test('dayKey sorts chronologically as strings', () => {
     (s) => dayKey(new Date(`${s}T12:00:00Z`)),
   );
   assert.deepEqual([...keys].sort(), ['2025-12-31', '2026-01-02', '2026-10-09']);
+});
+
+test('escapeAttr neutralises a script payload for attribute contexts', () => {
+  // Astro escapes & " ' inside an attribute but NOT < >, and a > closes the tag
+  // early — so an org-supplied title could inject a real script element into
+  // content="...". This is the regression test for that stored XSS.
+  const out = escapeAttr('<script>alert(1)</script>');
+  assert.ok(!out.includes('<'), `must not contain a raw <: ${out}`);
+  assert.ok(!out.includes('>'), `must not contain a raw >: ${out}`);
+  assert.equal(out, '&lt;script&gt;alert(1)&lt;/script&gt;');
+});
+
+test('escapeAttr also neutralises an attribute-breakout payload', () => {
+  // The second half of the attack: closing the attribute and adding a handler.
+  const out = escapeAttr('" onmouseover="alert(1)');
+  assert.ok(!out.includes('"'), `must not contain a raw double quote: ${out}`);
+  assert.equal(out, '&quot; onmouseover=&quot;alert(1)');
+});
+
+test('escapeAttr caps length so a title cannot bloat the head', () => {
+  assert.equal(escapeAttr('x'.repeat(500), 160).length, 160);
+  assert.equal(escapeAttr('short').length, 5);
 });

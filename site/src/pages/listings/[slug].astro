@@ -24,6 +24,7 @@ import {
   formatDayMonth,
   formatFilingTime,
   isNew,
+  escapeAttr,
 } from '../../lib/format';
 
 const { slug } = Astro.params;
@@ -65,12 +66,12 @@ const badgeCopy =
 >
   <Fragment slot="head">
     <meta property="og:type" content="article" />
-    <meta property="og:title" content={listing.title} />
-    <meta property="og:description" content={listing.summary} />
+    <meta property="og:title" content={escapeAttr(listing.title)} />
+    <meta property="og:description" content={escapeAttr(listing.summary)} />
     <meta property="og:url" content={canonical} />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content={listing.title} />
-    <meta name="twitter:description" content={listing.summary} />
+    <meta name="twitter:title" content={escapeAttr(listing.title)} />
+    <meta name="twitter:description" content={escapeAttr(listing.summary)} />
   </Fragment>
 
   <div class="wrap">

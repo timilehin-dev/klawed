@@ -37,6 +37,31 @@ export function formatLongDate(d: Date): string {
 }
 
 /**
+ * Make an org-supplied string safe for an HTML attribute.
+ *
+ * Astro escapes `&`, `"` and `'` inside attribute values, but NOT `<` or `>`.
+ * Inside an attribute a `>` closes the tag early, so a listing titled
+ * `<script>alert(1)</script>` becomes a REAL script element in the rendered
+ * `content="..."` — a stored XSS reachable by anyone who can POST a listing.
+ *
+ * Element bodies are safe (Astro escapes those correctly, verified against a
+ * live probe row), but attribute contexts need this. It is applied to the meta
+ * tags, which are the only place a raw org string lands in an attribute.
+ *
+ * Escapes the four characters that matter and caps length, because a title is
+ * also a headline, not a paragraph.
+ */
+export function escapeAttr(value: string, maxLength = 160): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .slice(0, maxLength);
+}
+
+/**
  * A stable grouping key for a filing day, in the board's timezone.
  *
  * Use this — never `toISOString().slice(0, 10)` — to bucket listings under day

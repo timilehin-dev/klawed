@@ -14,6 +14,7 @@ import { CATEGORIES } from '../lib/category-map';
 import {
   formatDatelineDate,
   formatWatTime,
+  escapeAttr,
   plural,
 } from '../lib/format';
 import { siteUrl } from '../lib/env';
@@ -71,8 +72,8 @@ const categoryLinks = CATEGORIES.map((c) => ({
     />
 
     <meta property="og:type" content="website" />
-    <meta property="og:title" content={title} />
-    <meta property="og:description" content={description} />
+    <meta property="og:title" content={escapeAttr(title)} />
+    <meta property="og:description" content={escapeAttr(description)} />
     <meta property="og:url" content={canonical} />
     <meta name="twitter:card" content="summary_large_image" />
   </head>
