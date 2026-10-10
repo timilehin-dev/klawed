@@ -1,19 +1,46 @@
 node_modules/
-.env
-.env.*
-!.env.example
+
+# ── build output ────────────────────────────────────────────────
 dist/
 .vercel/
 .astro/
+
+# ── secrets — never committed. .env.example is the only env file in git ──
+.env
+.env.*
+!.env.example
+*.bak
+
+# ── logs / editor / os ──────────────────────────────────────────
 *.log
+npm-debug.log*
 .DS_Store
 Thumbs.db
-quarantine/raw/*
-quarantine/drafts/*
-quarantine/review/*
-quarantine/approved/*
-quarantine/failed_*.md
-!quarantine/raw/.gitkeep
-!quarantine/drafts/.gitkeep
-!quarantine/review/.gitkeep
-!quarantine/approved/.gitkeep
+.vscode/
+.idea/
+
+# ── the pipeline's operational data ─────────────────────────────
+# quarantine/ is scratch: scout's raw finds, editor drafts, the verifier's
+# review lists and kill logs, and the poster's hand-off. It is never committed —
+# git is for code only (docs/GIT.md). The whole tree is ignored, .gitkeep files
+# included, so the directories are created locally instead of shipped.
+quarantine/
+
+# ── working notes, not part of the product ──────────────────────
+# Internal operating docs and process artefacts: the build brief, the owner's
+# step-by-step handoff, and the crew's standing instructions. They carry local
+# machine paths and the internal bot roster, which is not public information.
+# The PRODUCT docs stay in the repo (PRD, TRD, flow, plan, design-language and
+# the approved design variant).
+docs/BUILD-HANDOFF.md
+docs/builder-prompt.txt
+AGENTS.md
+PROJECT.md
+
+# ── local scratch ───────────────────────────────────────────────
+# An empty src/ was left at the repo root by an early scaffold. The real app is
+# site/, so nothing at the root is tracked.
+/src/
+
+*.local
+.stale_*/
