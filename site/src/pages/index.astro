@@ -398,6 +398,12 @@ const regionGroups = REGIONS.map((region) => {
 
     if (lastVisit === null) return;
 
+    // Respect reduced-motion: don't apply the shimmer state at all.
+    const prefersReduced =
+      window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReduced) return;
+
     // Mark entries filed since last visit
     const entries = document.querySelectorAll('.entry[data-created-at]');
     entries.forEach((el) => {
