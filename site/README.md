@@ -68,15 +68,15 @@ migrate production on every push, and two concurrent builds cannot race on the l
 
 ## The deploy config
 
-`vercel.json` sits at the **repo root**, not inside `site/` — Vercel reads its
-config from the root, and the app lives in a subdirectory. It sets
-`rootDirectory: "site"` and the build command.
+`vercel.json` lives in `site/` — the project root Vercel builds from. **Do not
+move it to the repository root.** A root-level config with `rootDirectory:
+"site"` was tried and the deploy failed; Vercel's project root is already `site/`,
+so the config belongs beside the app.
 
-It deliberately declares **no `outputDirectory`**. The Astro Vercel adapter
-(Build Output API v3) writes `.vercel/output/`, and Vercel uses that instead of
-`dist/`. With `output: 'server'` the server function and the routing table live
-in `.vercel/output/` while `dist/` holds only client assets, so pointing Vercel
-at `dist` would deploy a site with nothing that renders. Leave it unset.
+It declares `outputDirectory: "dist"`, and that is correct as committed — it is
+what the one successful production deploy used. The Astro Vercel adapter also
+writes `.vercel/output/`, but do not "fix" this key by removing it without a
+deploy to prove it: an untested config change here is what broke the build.
 
 The build runs `prisma generate && npm run db:migrate:ci && astro build`.
 `db:migrate:ci` **skips unless `RUN_MIGRATIONS=true`** is set on that build, so an

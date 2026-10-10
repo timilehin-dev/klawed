@@ -1,9 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "astro",
-  "rootDirectory": "site",
   "buildCommand": "prisma generate && npm run db:migrate:ci && astro build",
   "installCommand": "npm install",
+  "outputDirectory": "dist",
   "regions": ["fra1"],
   "github": {
     "enabled": true,
