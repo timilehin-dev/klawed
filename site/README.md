@@ -66,19 +66,35 @@ the build that should apply a schema change. A failed migration exits non-zero a
 blocks the deploy (TRD §8) — it is never forced past — but an unattended build does not
 migrate production on every push, and two concurrent builds cannot race on the lock.
 
-## The deploy config
+## The deploy config — and why the project root must be `site/`
 
-`vercel.json` lives in `site/` — the project root Vercel builds from. **Do not
-move it to the repository root.** A root-level config with `rootDirectory:
-"site"` was tried and the deploy failed; Vercel's project root is already `site/`,
-so the config belongs beside the app.
+`vercel.json` lives in `site/`, and the **Vercel project's Root Directory setting
+must be `site`**. That combination is the only one that works, and the reason is
+the adapter's output location:
 
-It declares `outputDirectory: "dist"`, and that is correct as committed — it is
-what the one successful production deploy used. The Astro Vercel adapter also
-writes `.vercel/output/`, but do not "fix" this key by removing it without a
-deploy to prove it: an untested config change here is what broke the build.
+the `@astrojs/vercel` adapter (Build Output API v3) writes `.vercel/output/`
+**inside the directory it builds from**. Verified locally — building from
+`site/` produces `site/.vercel/output/`, and no root-level `outputDirectory` can
+point at that path. So Vercel's root has to be `site/`, where the config already
+sits.
 
-The build runs `prisma generate && npm run db:migrate:ci && astro build`.
+Two attempts that failed, recorded so nobody repeats them:
+
+- Moving `vercel.json` to the repo root with `rootDirectory: "site"` — deploy
+  **ERROR**. A root-level `rootDirectory` in `vercel.json` is not the same as the
+  project's Root Directory setting; the build ran at `klaw/`, which has no app.
+- A root workspace manifest delegating `build` to `site/` — builds locally, but
+  still emits `site/.vercel/output/`, so Vercel at the repo root finds nothing to
+  serve. Every route 404s.
+
+The symptom of a wrong root is a deploy that reports **READY** while every URL
+404s: Vercel builds an empty directory, succeeds, and publishes nothing.
+
+Set it once in the dashboard: **Project → Settings → Build & Deployment → Root
+Directory = `site`**. Do not set an Output Directory override; leave it empty so
+the adapter's `.vercel/output/` is used.
+
+`buildCommand` runs `prisma generate && npm run db:migrate:ci && astro build`.
 `db:migrate:ci` **skips unless `RUN_MIGRATIONS=true`** is set on that build, so an
 unattended push never migrates production. A migration that is attempted and
 fails exits non-zero and blocks the deploy — never force past it.
