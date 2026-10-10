@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>klawhub — Variant A · The Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..700;1,6..72,300..600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --base:#ffffff; --band:#f4f4f5; --ink:#0b0b0b; --body:#71717a; --hairline:#e4e4e7; --white:#ffffff;
+  --ink-2:#18181b; --body-2:#52525b;
+  --accent:#0e7a46; --accent-strong:#0a6238; --accent-tint:#eaf5ee;
+  --deadline-safe:var(--body); --rolling-fg:var(--body-2); --rolling-border:var(--hairline);
+  --closing-bg:#fef3c7; --closing-fg:#92400e; --closing-border:#fde68a; --expired-fg:#a1a1aa;
+  --region-nigeria-bg:var(--accent); --region-nigeria-fg:#ffffff;
+  --region-africa-fg:var(--ink); --region-africa-border:#d4d4d8;
+  --region-global-bg:var(--band); --region-global-fg:var(--body);
+  --radius-card:18px; --radius-card-lg:24px; --radius-input:12px; --radius-pill:9999px;
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:24px; --space-6:32px;
+  --space-8:48px; --space-10:64px; --space-12:96px; --space-16:128px;
+  --content-max:1120px; --gutter:24px;
+  --font-display:"Newsreader",Georgia,"Times New Roman",serif;
+  --font-sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --ease:cubic-bezier(0.4,0,0.2,1); --dur:200ms;
+  --on-dark-meta:#a1a1aa;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--base);color:var(--ink-2);font-family:var(--font-sans);font-size:16px;line-height:1.6;
+  -webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:var(--content-max);margin:0 auto;padding:0 var(--gutter)}
+.tone-1{color:var(--ink)} .tone-2{color:var(--body)}
+.eyebrow{font-size:12px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--body);
+  font-family:var(--font-sans)}
+svg{display:block}
+
+/* ── 1. Slim sticky filter bar ───────────────────────────────── */
+.topbar{position:sticky;top:0;z-index:20;background:var(--base);border-bottom:1px solid var(--hairline)}
+.topbar-in{display:flex;align-items:center;gap:var(--space-4);height:56px}
+.wordmark{font-family:var(--font-display);font-size:20px;font-weight:600;color:var(--ink);letter-spacing:-.01em;
+  flex:none;line-height:1}
+.wordmark b{font-weight:600}
+.chips{display:flex;align-items:center;gap:6px;overflow:hidden;flex:1;min-width:0}
+.chip{display:inline-flex;align-items:center;height:36px;padding:0 14px;border:1px solid var(--hairline);
+  border-radius:var(--radius-pill);background:var(--base);font-size:14px;font-weight:500;color:var(--ink-2);
+  flex:none;transition:background var(--dur) var(--ease),border-color var(--dur) var(--ease)}
+.chip .count{width:24px;height:24px;border-radius:50%;background:var(--band);color:var(--body);
+  font-size:12px;font-weight:600;line-height:24px;text-align:center;margin-left:8px}
+.chip.is-closing{border-color:var(--closing-border);background:var(--closing-bg);color:var(--closing-fg)}
+.chip.is-closing .count{background:rgba(255,255,255,.6);color:var(--closing-fg)}
+.chip.is-active{background:var(--ink);color:var(--white);border-color:var(--ink)}
+.chip.is-active .count{background:rgba(255,255,255,.18);color:var(--white)}
+.regionfilter{display:flex;align-items:center;gap:14px;flex:none;font-size:14px;color:var(--body)}
+.regionfilter a{border-bottom:1px solid transparent;transition:color var(--dur) var(--ease)}
+.regionfilter a:hover{color:var(--ink);border-bottom-color:var(--ink)}
+.regionfilter a.on{color:var(--ink);font-weight:500;border-bottom-color:var(--accent)}
+
+/* ── 2. Compact editorial masthead ───────────────────────────── */
+.masthead{padding-top:var(--space-6)}
+.masthead .display{font-family:var(--font-display);font-size:48px;font-weight:400;line-height:1.04;
+  letter-spacing:-.02em}
+.lede{font-size:18px;line-height:1.6;color:var(--body);max-width:60ch;margin-top:var(--space-4)}
+.livestatus{font-size:14px;color:var(--body);margin-top:var(--space-3);padding-bottom:var(--space-3);
+  border-bottom:1px solid var(--hairline)}
+.livestatus b{color:var(--ink-2);font-weight:500}
+
+/* ── section heading block ───────────────────────────────────── */
+.sec{margin-top:var(--space-8)}
+.sec-head{margin-bottom:var(--space-8)}
+.sec-title{font-family:var(--font-display);font-size:40px;font-weight:500;line-height:1.08;letter-spacing:-.01em}
+.sec-sub{font-size:15px;color:var(--body);margin-top:var(--space-3);max-width:60ch}
+
+/* ── 3. Closing Soon — the one dark block ────────────────────── */
+.closing{background:var(--ink);border-radius:var(--radius-card-lg);padding:var(--space-5);color:var(--white)}
+.closing-head{display:flex;align-items:baseline;justify-content:space-between;gap:var(--space-4);
+  padding-bottom:var(--space-4);border-bottom:1px solid rgba(255,255,255,.14);margin-bottom:var(--space-2)}
+.closing-title{font-family:var(--font-display);font-size:24px;font-weight:500;line-height:1.2;letter-spacing:0}
+.closing-title .t2{color:var(--on-dark-meta)}
+.closing-note{font-size:14px;color:var(--on-dark-meta)}
+.closing-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 var(--space-6)}
+.citem{display:block;padding:var(--space-4) 0;border-bottom:1px solid rgba(255,255,255,.1)}
+.citem-title{font-size:16px;font-weight:600;color:var(--white);letter-spacing:-.01em;line-height:1.3}
+.citem-title:hover{color:#d6f0e2}
+.citem-meta{font-size:13px;color:var(--on-dark-meta);margin-top:2px}
+.citem-bottom{display:flex;align-items:center;gap:var(--space-2);margin-top:10px}
+.citem .summary{font-size:14px;color:#d4d4d8;margin-top:6px;line-height:1.5}
+.badge{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 12px;border-radius:var(--radius-pill);
+  font-size:12px;font-weight:600;letter-spacing:.02em;white-space:nowrap}
+.badge svg{opacity:.85}
+.badge-urgent{background:var(--closing-bg);color:var(--closing-fg);border:1px solid var(--closing-border)}
+.badge-today{background:var(--white);color:var(--ink);border:1px solid var(--white)}
+.region{display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:var(--radius-pill);
+  font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+.region-nigeria{background:var(--region-nigeria-bg);color:var(--region-nigeria-fg)}
+.region-africa{background:transparent;color:var(--region-africa-fg);border:1px solid var(--region-africa-border)}
+.region-global{background:var(--region-global-bg);color:var(--region-global-fg)}
+.region-dark-africa{background:transparent;color:var(--on-dark-meta);border:1px solid #3f3f46}
+.region-dark-global{background:rgba(255,255,255,.10);color:var(--on-dark-meta)}
+
+/* ── 4. Main feed ────────────────────────────────────────────── */
+.feed{display:flex;flex-direction:column;gap:var(--space-3)}
+.grouplabel{font-size:12px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--body);
+  padding:var(--space-4) 0 var(--space-1);font-family:var(--font-sans);display:flex;align-items:center;gap:10px}
+.grouplabel:after{content:"";flex:1;height:1px;background:var(--hairline)}
+.row{display:grid;grid-template-columns:34px 1fr auto;gap:var(--space-5);align-items:start;
+  background:var(--base);border:1px solid var(--hairline);border-radius:var(--radius-card);padding:20px 24px;
+  color:inherit;text-decoration:none;
+  transition:transform var(--dur) var(--ease),border-color var(--dur) var(--ease)}
+.row:hover{transform:translateY(-2px);border-color:var(--ink-2)}
+.row-index{font-size:12px;font-weight:600;color:var(--body);letter-spacing:.02em;padding-top:4px;
+  font-variant-numeric:tabular-nums}
+.row-title{font-size:20px;font-weight:600;letter-spacing:-.01em;line-height:1.28;color:var(--ink-2)}
+.row-title .new{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:var(--radius-pill);
+  background:var(--accent-tint);color:var(--accent-strong);font-size:12px;font-weight:600;letter-spacing:.02em;
+  vertical-align:2px;margin-left:8px}
+.row-meta{font-size:14px;color:var(--body);margin-top:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.row-summary{font-size:15px;color:var(--body-2);margin-top:8px;line-height:1.55;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.row-side{min-width:200px;display:flex;flex-direction:column;align-items:flex-end;gap:var(--space-2);text-align:right}
+.badge-safe{background:var(--band);color:var(--deadline-safe);border:1px solid transparent}
+.badge-rolling{border:1px solid var(--rolling-border);color:var(--rolling-fg);background:transparent}
+.apply{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--accent);
+  margin-top:2px;transition:gap var(--dur) var(--ease),color var(--dur) var(--ease)}
+.row:hover .apply{gap:10px;color:var(--accent-strong)}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ── archive strip ───────────────────────────────────────────── */
+.archive{margin-top:var(--space-8);border:1px solid var(--hairline);border-radius:var(--radius-card);
+  padding:20px 24px;background:var(--base)}
+.archive-head{font-size:12px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--body);
+  margin-bottom:var(--space-3)}
+.archive-item{display:flex;align-items:baseline;gap:var(--space-3);padding:7px 0;border-top:1px solid var(--hairline)}
+.archive-item:first-of-type{border-top:0}
+.archive-title{font-size:15px;color:var(--body-2)}
+.archive-item .badge-expired{color:var(--expired-fg);background:transparent;border:0;padding:0;height:auto;
+  text-decoration:line-through}
+
+/* ── category page strip ─────────────────────────────────────── */
+.strip{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-3)}
+.card{background:var(--base);border:1px solid var(--hairline);border-radius:var(--radius-card);padding:20px 24px;
+  display:flex;flex-direction:column;transition:transform var(--dur) var(--ease),border-color var(--dur) var(--ease)}
+.card:hover{transform:translateY(-2px);border-color:var(--ink-2)}
+.card-cat{font-size:12px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--body)}
+.card-title{font-size:20px;font-weight:600;letter-spacing:-.01em;line-height:1.28;color:var(--ink-2);margin-top:10px}
+.card-elig{font-size:14px;color:var(--body);margin-top:8px}
+.card-sum{font-size:15px;color:var(--body-2);margin-top:10px;line-height:1.55;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card-foot{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);margin-top:auto;
+  padding-top:var(--space-4)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 24px;
+  border-radius:var(--radius-pill);font-size:14px;font-weight:500;font-family:var(--font-sans);cursor:pointer;
+  transition:background var(--dur) var(--ease),border-color var(--dur) var(--ease)}
+.btn-primary{background:var(--accent);color:#fff;border:none}
+.btn-primary:hover{background:var(--accent-strong)}
+.btn-secondary{background:var(--base);color:var(--ink);border:1px solid var(--ink)}
+.btn-secondary:hover{background:var(--band)}
+.btn-sm{height:36px;padding:0 16px}
+
+/* ── about block ─────────────────────────────────────────────── */
+.about{border-left:2px solid var(--accent);padding:2px 0 2px var(--space-5);max-width:70ch}
+.about h3{font-family:var(--font-display);font-size:24px;font-weight:500;line-height:1.2;color:var(--ink)}
+.about p{font-size:16px;color:var(--body-2);margin-top:var(--space-3);line-height:1.65}
+
+/* ── newsletter ──────────────────────────────────────────────── */
+.newsletter{background:var(--band);border-radius:var(--radius-card-lg);padding:var(--space-6);max-width:640px}
+.newsletter h3{font-family:var(--font-display);font-size:24px;font-weight:500;line-height:1.2;color:var(--ink)}
+.newsletter p{font-size:15px;color:var(--body);margin-top:var(--space-2);max-width:52ch}
+.newsrow{display:flex;gap:var(--space-3);margin-top:var(--space-4)}
+.newsrow input{flex:1;height:44px;border:1px solid var(--hairline);border-radius:var(--radius-input);
+  padding:0 16px;background:var(--base);font-family:var(--font-sans);font-size:15px;color:var(--ink-2)}
+.newsrow input::placeholder{color:var(--body)}
+
+/* ── footer ──────────────────────────────────────────────────── */
+footer{margin-top:var(--space-12);border-top:1px solid var(--hairline);padding:var(--space-8) 0}
+.foot{display:flex;justify-content:space-between;gap:var(--space-8);flex-wrap:wrap}
+.foot-word{font-family:var(--font-display);font-size:24px;font-weight:600;color:var(--ink);line-height:1}
+.foot-rule{width:36px;height:2px;background:var(--accent);margin-top:10px}
+.foot-tag{font-size:14px;color:var(--body);margin-top:var(--space-3);max-width:30ch}
+.footnav{display:flex;gap:var(--space-5);flex-wrap:wrap;font-size:14px;color:var(--body)}
+.footnav a:hover{color:var(--ink)}
+.footcols{display:flex;gap:var(--space-10);flex-wrap:wrap}
+.footcol h4{font-size:12px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-2);
+  margin-bottom:var(--space-3)}
+.footcol ul{list-style:none;display:flex;flex-direction:column;gap:var(--space-2)}
+.footprint{font-size:14px;color:var(--body-2);margin-top:var(--space-8);padding-top:var(--space-4);
+  border-top:1px solid var(--hairline)}
+.sampleflag{background:var(--band);border-radius:var(--radius-card);padding:14px 20px;font-size:14px;
+  color:var(--body-2);margin-top:var(--space-6)}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition:none !important;animation:none !important}
+}
+@media (max-width:900px){
+  .closing-grid{grid-template-columns:1fr}
+  .strip{grid-template-columns:1fr}
+  .masthead .display{font-size:40px}
+}
+</style>
+</head>
+<body>
+
+<!-- 1 ── slim sticky filter bar -->
+<div class="topbar">
+  <div class="wrap topbar-in">
+    <a class="wordmark" href="#">klawhub</a>
+    <nav class="chips" aria-label="Categories">
+      <a class="chip is-active" href="#">All <span class="count">97</span></a>
+      <a class="chip" href="#">jobs <span class="count">14</span></a>
+      <a class="chip" href="#">remote <span class="count">9</span></a>
+      <a class="chip" href="#">hackathons <span class="count">6</span></a>
+      <a class="chip" href="#">grants <span class="count">11</span></a>
+      <a class="chip" href="#">accelerators <span class="count">8</span></a>
+      <a class="chip" href="#">visas <span class="count">7</span></a>
+      <a class="chip" href="#">scholarships <span class="count">12</span></a>
+      <a class="chip" href="#">internships <span class="count">15</span></a>
+      <a class="chip" href="#">ai-credits <span class="count">5</span></a>
+      <a class="chip" href="#">student-deals <span class="count">10</span></a>
+      <a class="chip is-closing" href="#">closing soon <span class="count">11</span></a>
+    </nav>
+    <div class="regionfilter" aria-label="Region filter">
+      <a class="on" href="#">Nigeria</a><a href="#">Africa</a><a href="#">Global</a>
+    </div>
+  </div>
+</div>
+
+<!-- 2 ── compact editorial masthead -->
+<div class="wrap">
+  <header class="masthead">
+    <h1 class="display"><span class="tone-1">Opportunities,</span> <span class="tone-2">klawed first.</span></h1>
+    <p class="lede">A short list of real openings for builders — jobs, grants, hackathons, visas — each one
+      checked by hand before it goes up. Nigeria first, then Africa, then the rest of the world.</p>
+    <p class="livestatus"><b>97 open opportunities</b> · updated Thu 9 Oct, 07:10 WAT · nothing here is sponsored</p>
+  </header>
+
+  <!-- 3 ── Closing Soon, first class -->
+  <section class="sec">
+    <div class="sec-head">
+      <p class="eyebrow">This week</p>
+      <h2 class="sec-title"><span class="tone-1">Open right now,</span> <span class="tone-2">closing soon.</span></h2>
+      <p class="sec-sub">Eleven of these shut inside seven days. The clock is the only thing that matters today.</p>
+    </div>
+
+    <div class="closing">
+      <div class="closing-head">
+        <h3 class="closing-title"><span class="tone-1" style="color:var(--white)">Closing soon</span>
+          <span class="t2">— under seven days.</span></h3>
+        <span class="closing-note">11 open · 4 shown</span>
+      </div>
+      <div class="closing-grid">
+        <a class="citem" href="#">
+          <h4 class="citem-title">Product Designer, Payments</h4>
+          <p class="citem-meta">Sabi · jobs · Nigeria</p>
+          <p class="summary">Designing the checkout for informal traders. Three to five years in, Lagos-based or
+            willing to be.</p>
+          <div class="citem-bottom">
+            <span class="region region-nigeria">Nigeria</span>
+            <span class="badge badge-urgent">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"/><path d="M12 7.5v5l3.2 1.9"/></svg>
+              3 days left</span>
+          </div>
+        </a>
+        <a class="citem" href="#">
+          <h4 class="citem-title">Zindi AI Hackathon: Crop Disease</h4>
+          <p class="citem-meta">Zindi · hackathons · Africa</p>
+          <p class="summary">Build a model that spots cassava blight from a phone photo. Teams of up to four,
+            prize pool in naira.</p>
+          <div class="citem-bottom">
+            <span class="region region-dark-africa">Africa</span>
+            <span class="badge badge-urgent">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"/><path d="M12 7.5v5l3.2 1.9"/></svg>
+              6 days left</span>
+          </div>
+        </a>
+        <a class="citem" href="#">
+          <h4 class="citem-title">Frontend Engineer, Cross-border Payouts</h4>
+          <p class="citem-meta">Chimoney · remote · Nigeria</p>
+          <p class="summary">React and TypeScript on a payout product that moves money between 30 African markets.
+            Fully remote.</p>
+          <div class="citem-bottom">
+            <span class="region region-nigeria">Nigeria</span>
+            <span class="badge badge-urgent">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"/><path d="M12 7.5v5l3.2 1.9"/></svg>
+              4 days left</span>
+          </div>
+        </a>
+        <a class="citem" href="#">
+          <h4 class="citem-title">Software Engineering Graduate Intake</h4>
+          <p class="citem-meta">Interswitch · internships · Nigeria</p>
+          <p class="summary">Paid 12-month track for final-year and recent graduates in Lagos. Applications close
+            at midnight today.</p>
+          <div class="citem-bottom">
+            <span class="region region-nigeria">Nigeria</span>
+            <span class="badge badge-today">Closes today</span>
+          </div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 ── main feed -->
+  <section class="sec">
+    <div class="sec-head">
+      <p class="eyebrow">The board</p>
+      <h2 class="sec-title"><span class="tone-1">Everything live,</span> <span class="tone-2">Nigeria first.</span></h2>
+    </div>
+
+    <p class="grouplabel">Nigeria · 41</p>
+    <div class="feed">
+      <a class="row" href="#">
+        <span class="row-index">01</span>
+        <div>
+          <h3 class="row-title">Backend Engineer, Payments Platform<span class="new">New</span></h3>
+          <p class="row-meta">Paystack · jobs · posted 8 Oct</p>
+          <p class="row-summary">Go and Postgres on the API that settles a large share of Nigeria's card traffic.
+            Four years in, remote-friendly for anyone already in Nigeria.</p>
+        </div>
+        <div class="row-side">
+          <span class="region region-nigeria">Nigeria</span>
+          <span class="badge badge-safe">Closes 12 Nov</span>
+          <span class="apply">Apply
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13"/><path d="M13 7l5 5-5 5"/></svg>
+          </span>
+        </div>
+      </a>
+
+      <a class="row" href="#">
+        <span class="row-index">02</span>
+        <div>
+          <h3 class="row-title">Startup Act Nigeria — Incorporation Support</h3>
+          <p class="row-meta">Startup Act Nigeria · grants · posted 6 Oct</p>
+          <p class="row-summary">Labelling under the Act gets you tax relief and access to government grants.
+            Applications run continuously, so there is no rush date to hit.</p>
+        </div>
+        <div class="row-side">
+          <span class="region region-nigeria">Nigeria</span>
+          <span class="badge badge-rolling">Rolling</span>
+          <span class="apply">Apply
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13"/><path d="M13 7l5 5-5 5"/></svg>
+          </span>
+        </div>
+      </a>
+
+      <a class="row" href="#">
+        <span class="row-index">03</span>
+        <div>
+          <h3 class="row-title">Operations Intern, Moove Lagos</h3>
+          <p class="row-meta">Moove · internships · posted 9 Oct</p>
+          <p class="row-summary">Six months inside the ops team behind Africa's largest vehicle-financing fleet.
+            Stipend is monthly and it is paid in naira.</p>
+        </div>
+        <div class="row-side">
+          <span class="region region-nigeria">Nigeria</span>
+          <span class="badge badge-safe">Closes 20 Oct</span>
+          <span class="apply">Apply
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13"/><path d="M13 7l5 5-5 5"/></svg>
+          </span>
+        </div>
+      </a>
+
+      <a class="row" href="#">
+        <span class="row-index">04</span>
+        <div>
+          <h3 class="row-title">Cowrywise Content Writer, Personal Finance</h3>
+          <p class="row-meta">Cowrywise · jobs · posted 9 Oct</p>
+          <p class="row-summary">You write plainly about saving and investing for people who have never held a
+            portfolio. Part-time and contract are both fine.</p>
+        </div>
+        <div class="row-side">
+          <span class="region region-nigeria">Nigeria</span>
+          <span class="badge badge-safe">Closes 24 Oct</span>
+          <span class="apply">Apply
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13"/><path d="M13 7l5 5-5 5"/></svg>
+          </span>
+        </div>
+      </a>
+    </div>
+
+    <p class="grouplabel">Africa · 33</p>
+    <div class="feed">
+      <a class="row" href="#">
+        <span class="row-index">05</span>
+        <div>
+          <h3 class="row-title">MEST Africa Challenge 2026<span class="new">New</span></h3>
+          <p class="row-meta">MEST Africa · accelerators · posted 9 Oct</p>
+          <p class="row-summary">Accra-hosted program for software startups from anywhere on the continent. Equity
+            investment of up to $100k for the twelve that make it through.</p>
+        </div>
+        <div class="row-side">
+          <span class="region region-africa">Africa</span>
+          <span class="badge badge-safe">Closes 30 Oct</span>
+          <span class="apply">Apply
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13"/><path d="M13 7l5 5-5 5"/></svg>
+          </span>
+        </div>
+      </a>
+
+      <a class="row" href="#">
+        <span class="row-index">06</span>
+        <div>
+          <h3 class="row-title">Ingressive for Good — Tech Scholarship</h3>
+          <p class="row-meta">Ingressive for Good · scholarships · posted 3 Oct</p>
+          <p class="row-summary">Fully funded laptop plus a year of software training for African students. Cohorts
+            open and close on a rolling basis rather than on one date.</p>
+        </div>
+        <div class="row-side">
+          <span class="region region-africa">Africa</span>
+          <span class="badge badge-rolling">Rolling</span>
+          <span class="apply">Apply
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13"/><path d="M13 7l5 5-5 5"/></svg>
+          </span>
+        </div>
+      </a>
+
+      <a class="row" href="#">
+        <span class="row-index">07</span>
+        <div>
+          <h3 class="row-title">Norrsken Accelerator — Kigali Cohort</h3>
+          <p class="row-meta">Norrsken Kigali · accelerators · posted 7 Oct</p>
+          <p class="row-summary">Six-month program in Rwanda for impact startups at seed stage. Applications ask
+            for traction numbers, so come with data, not a deck.</p>
+        </div>
+        <div class="row-side">
+          <span class="region region-africa">Africa</span>
+          <span class="badge badge-safe">Closes 5 Dec</span>
+          <span class="apply">Apply
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13"/><path d="M13 7l5 5-5 5"/></svg>
+          </span>
+        </div>
+      </a>
+    </div>
+
+    <p class="grouplabel">Global · 23</p>
+    <div class="feed">
+      <a class="row" href="#">
+        <span class="row-index">08</span>
+        <div>
+          <h3 class="row-title">GitHub Student Developer Pack</h3>
+          <p class="row-meta">GitHub · student-deals · posted 1 Oct</p>
+          <p class="row-summary">Free Copilot, domains, and a long list of paid tools once you verify you are a
+            student. Verification takes about ten minutes and it lasts a year.</p>
+        </div>
+        <div class="row-side">
+          <span class="region region-global">Global</span>
+          <span class="badge badge-rolling">Rolling</span>
+          <span class="apply">Apply
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13"/><path d="M13 7l5 5-5 5"/></svg>
+          </span>
+        </div>
+      </a>
+
+      <a class="row" href="#">
+        <span class="row-index">09</span>
+        <div>
+          <h3 class="row-title">Global Talent Visa — Digital Technology</h3>
+          <p class="row-meta">UK Home Office · visas · posted 2 Oct</p>
+          <p class="row-summary">The standing route for senior engineers and founders moving to the UK without a
+            job offer in hand. Endorsement body decides, not the employer.</p>
+        </div>
+        <div class="row-side">
+          <span class="region region-global">Global</span>
+          <span class="badge badge-rolling">Rolling</span>
+          <span class="apply">Apply
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13"/><path d="M13 7l5 5-5 5"/></svg>
+          </span>
+        </div>
+      </a>
+
+      <a class="row" href="#">
+        <span class="row-index">10</span>
+        <div>
+          <h3 class="row-title">Canada Start-up Visa — Designated Incubator</h3>
+          <p class="row-meta">IRCC · visas · posted 2 Oct</p>
+          <p class="row-summary">Permanent residence for founders whose startup is backed by one of the listed
+            incubators. The letter of support is the hard part, not the paperwork.</p>
+        </div>
+        <div class="row-side">
+          <span class="region region-global">Global</span>
+          <span class="badge badge-rolling">Rolling</span>
+          <span class="apply">Apply
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13"/><path d="M13 7l5 5-5 5"/></svg>
+          </span>
+        </div>
+      </a>
+
+      <a class="row" href="#">
+        <span class="row-index">11</span>
+        <div>
+          <h3 class="row-title">Google Africa Developer Scholarship — Cloud Track</h3>
+          <p class="row-meta">Google · scholarships · posted 5 Oct</p>
+          <p class="row-summary">Free pluralsight-style coursework plus a shot at a paid Udacity nanodegree for
+            African developers. Top performers on the challenge get the funded seat.</p>
+        </div>
+        <div class="row-side">
+          <span class="region region-global">Global</span>
+          <span class="badge badge-safe">Closes 14 Nov</span>
+          <span class="apply">Apply
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13"/><path d="M13 7l5 5-5 5"/></svg>
+          </span>
+        </div>
+      </a>
+
+      <a class="row" href="#">
+        <span class="row-index">12</span>
+        <div>
+          <h3 class="row-title">Microsoft for Startups — Founders Hub Credits</h3>
+          <p class="row-meta">Microsoft · ai-credits · posted 4 Oct</p>
+          <p class="row-summary">Azure and OpenAI credits that scale with your usage rather than expiring on a
+            fixed date. Self-serve, no interview, no revenue bar.</p>
+        </div>
+        <div class="row-side">
+          <span class="region region-global">Global</span>
+          <span class="badge badge-rolling">Rolling</span>
+          <span class="apply">Apply
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13"/><path d="M13 7l5 5-5 5"/></svg>
+          </span>
+        </div>
+      </a>
+    </div>
+
+    <div class="archive">
+      <p class="archive-head">Recently closed — archive, kept for reference</p>
+      <div class="archive-item">
+        <span class="archive-title">Flutterwave Backend Engineer, Fintech</span>
+        <span class="badge badge-expired">Closed 30 Sep</span>
+      </div>
+      <div class="archive-item">
+        <span class="archive-title">TechCabal Early-Stage Report — Research Grant</span>
+        <span class="badge badge-expired">Closed 1 Oct</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- category page strip -->
+  <section class="sec">
+    <div class="sec-head">
+      <p class="eyebrow">Category page · /jobs</p>
+      <h2 class="sec-title"><span class="tone-1">Jobs,</span> <span class="tone-2">open to Nigerian builders.</span></h2>
+      <p class="sec-sub">Fourteen live roles. Full-time and part-time, no five-year minimums.</p>
+    </div>
+    <div class="strip">
+      <a class="card" href="#">
+        <span class="card-cat">jobs</span>
+        <h3 class="card-title">Backend Engineer, Payments Platform</h3>
+        <p class="card-elig">Nigerian residents · 4+ years · Go or Python</p>
+        <p class="card-sum">Go and Postgres on the API that settles a large share of Nigeria's card traffic.</p>
+        <div class="card-foot">
+          <span class="badge badge-safe">Closes 12 Nov</span>
+          <span class="apply">View
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13"/><path d="M13 7l5 5-5 5"/></svg>
+          </span>
+        </div>
+      </a>
+      <a class="card" href="#">
+        <span class="card-cat">jobs</span>
+        <h3 class="card-title">Support Engineer, Merchant Accounts</h3>
+        <p class="card-elig">Anywhere in Nigeria · 2+ years · SQL helpful</p>
+        <p class="card-sum">First line for merchants whose payouts stall. You will read a lot of logs and write
+          clearer runbooks.</p>
+        <div class="card-foot">
+          <span class="badge badge-rolling">Rolling</span>
+          <span class="apply">View
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13"/><path d="M13 7l5 5-5 5"/></svg>
+          </span>
+        </div>
+      </a>
+      <a class="card" href="#">
+        <span class="card-cat">jobs</span>
+        <h3 class="card-title">Data Analyst, Lending Risk</h3>
+        <p class="card-elig">Nigerian residents · degree in any field</p>
+        <p class="card-sum">Score thin-file borrowers with the data you already have. This is the job where your
+          assumptions get tested fastest.</p>
+        <div class="card-foot">
+          <span class="badge badge-urgent">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"/><path d="M12 7.5v5l3.2 1.9"/></svg>
+            5 days left</span>
+          <span class="apply">View
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13"/><path d="M13 7l5 5-5 5"/></svg>
+          </span>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <!-- about block -->
+  <section class="sec">
+    <div class="about">
+      <h3>What klawhub is</h3>
+      <p>One bot writes every listing on this site. Each one carries a direct link that resolves, a deadline that
+        is genuinely in the future, and stated eligibility — who can apply, and from where. A human approves the
+        list before it goes up, and kills anything that does not check out. There is no sponsored placement and
+        there never will be.</p>
+    </div>
+  </section>
+
+  <!-- newsletter -->
+  <section class="sec">
+    <div class="newsletter">
+      <h3>Get the day's openings in one email</h3>
+      <p>One message each weekday morning at 07:00 WAT: what went up, what is about to close. No filler, and you
+        can leave in one click.</p>
+      <form class="newsrow" onsubmit="return false">
+        <label class="sr" for="em-a" style="position:absolute;left:-9999px">Email address</label>
+        <input id="em-a" type="email" placeholder="you@example.com" autocomplete="email">
+        <button class="btn btn-primary" type="submit">Subscribe</button>
+      </form>
+    </div>
+  </section>
+
+  <p class="sampleflag">Design mockup — sample listings only. Not a live page, not an endorsement, and none of
+    these deadlines are real.</p>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <p class="foot-word">klawhub</p>
+        <div class="foot-rule"></div>
+        <p class="foot-tag">Opportunities, klawed first. A small board, written by a bot, approved by a person.</p>
+      </div>
+      <div class="footcols">
+        <div class="footcol">
+          <h4>Categories</h4>
+          <ul>
+            <li><a href="#">jobs</a></li><li><a href="#">remote</a></li><li><a href="#">hackathons</a></li>
+            <li><a href="#">grants</a></li><li><a href="#">accelerators</a></li>
+          </ul>
+        </div>
+        <div class="footcol">
+          <h4>More</h4>
+          <ul>
+            <li><a href="#">visas</a></li><li><a href="#">scholarships</a></li><li><a href="#">internships</a></li>
+            <li><a href="#">ai-credits</a></li><li><a href="#">student-deals</a></li>
+          </ul>
+        </div>
+        <div class="footcol">
+          <h4>The site</h4>
+          <ul>
+            <li><a href="#">About</a></li><li><a href="#">How listings are checked</a></li>
+            <li><a href="#news">Newsletter</a></li><li><a href="#">Archive</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <p class="footprint">Built and run from Lagos. Every listing is checked before it goes up — if a link breaks,
+      <a href="#" style="color:var(--accent);border-bottom:1px solid var(--accent)">tell us</a> and it comes down
+      the same day.</p>
+  </div>
+</footer>
+
+</body>
+</html>

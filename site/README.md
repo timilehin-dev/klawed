@@ -66,6 +66,36 @@ the build that should apply a schema change. A failed migration exits non-zero a
 blocks the deploy (TRD §8) — it is never forced past — but an unattended build does not
 migrate production on every push, and two concurrent builds cannot race on the lock.
 
+## The deploy config
+
+`vercel.json` sits at the **repo root**, not inside `site/` — Vercel reads its
+config from the root, and the app lives in a subdirectory. It sets
+`rootDirectory: "site"` and the build command.
+
+It deliberately declares **no `outputDirectory`**. The Astro Vercel adapter
+(Build Output API v3) writes `.vercel/output/`, and Vercel uses that instead of
+`dist/`. With `output: 'server'` the server function and the routing table live
+in `.vercel/output/` while `dist/` holds only client assets, so pointing Vercel
+at `dist` would deploy a site with nothing that renders. Leave it unset.
+
+The build runs `prisma generate && npm run db:migrate:ci && astro build`.
+`db:migrate:ci` **skips unless `RUN_MIGRATIONS=true`** is set on that build, so an
+unattended push never migrates production. A migration that is attempted and
+fails exits non-zero and blocks the deploy — never force past it.
+
+## Vercel environment variables
+
+Set these on the project, in **Production and Preview**:
+
+| Variable | Source |
+|---|---|
+| `POSTGRES_PRISMA_URL` | injected automatically by the Vercel Postgres (Neon) integration |
+| `POSTGRES_URL_NON_POOLING` | injected automatically — needed for migrations |
+| `KLAWHUB_API_KEY` | set by hand; the poster bot's key |
+| `KLAWHUB_SITE_URL` | `https://klawhub.xyz` |
+
+`RUN_MIGRATIONS=true` goes on the build that first applies the schema.
+
 ## Content API
 
 ```

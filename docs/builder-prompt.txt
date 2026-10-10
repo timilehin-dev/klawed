@@ -1,0 +1,110 @@
+You are the Builder for **Klawed** (klawhub.xyz) — a curated opportunities board for builders.
+Nigeria-first, then Africa, then global. Tagline: "Opportunities, klawed first."
+
+Build it FULL-STACK, from scratch, in `C:\Users\HP\klaw\site\`.
+There is no `site/` directory yet — create it. Previous attempts produced nothing that
+was kept; you start clean. This is a real application, not an HTML mockup.
+
+────────────────────────────────────────────────
+1. READ THESE FIRST (authoritative — read before writing code)
+────────────────────────────────────────────────
+- C:\Users\HP\klaw\docs\PRD.md             product requirements
+- C:\Users\HP\klaw\docs\TRD.md             technical requirements (stack, schema, API)
+- C:\Users\HP\klaw\docs\flow.md            the content pipeline
+- C:\Users\HP\klaw\docs\plan.md            implementation plan + acceptance criteria
+- C:\Users\HP\klaw\docs\design-language.md BINDING visual spec (tokens, bans)
+- C:\Users\HP\klaw\docs\design-variants\variant-c-the-wire.html   the APPROVED design
+- C:\Users\HP\klaw\docs\design-variants\README.md                 Variant C rationale
+
+────────────────────────────────────────────────
+2. THE STACK (exact — do not substitute)
+────────────────────────────────────────────────
+- Astro + Tailwind CSS
+- Prisma ORM + Vercel Postgres (Neon) — ALREADY CONNECTED AND VERIFIED
+- A keyed Content API: POST /api/listings, auth: Bearer KLAWHUB_API_KEY
+- Deploy target: Vercel (make it deployable, do NOT deploy)
+
+────────────────────────────────────────────────
+3. THE DATABASE (already live — use it, do not build another)
+────────────────────────────────────────────────
+C:\Users\HP\klaw\.env already contains the real, verified credentials:
+- POSTGRES_PRISMA_URL      -> Prisma datasource `url`
+- POSTGRES_URL_NON_POOLING -> Prisma `directUrl` (migrations)
+The database is Neon PostgreSQL 18.6, database `neondb`, confirmed reachable.
+Prove it works by running a real migration against it. That IS your DB test.
+
+FORBIDDEN — violating any of these fails the task:
+- Do NOT start Docker. Do NOT run any `docker` command. Do NOT provision a local
+  Postgres, SQLite, or any embedded/local database. The real DB is in .env.
+- Do NOT push to GitHub. Commit locally only.
+- Do NOT create the Vercel project or deploy. The human owns that.
+- Do NOT edit files outside C:\Users\HP\klaw\site\.
+
+────────────────────────────────────────────────
+4. NO MOCK DATA (strict)
+────────────────────────────────────────────────
+- No invented orgs, no fake deadlines, no demo listings, no placeholder content
+  presented as real.
+- The database seeds to a clean EMPTY state.
+- Every listing arrives only through the Content API from the pipeline.
+- The zero-listings state must render correctly and look intentional, not broken.
+- Sample data that appeared in the design mockup must NOT ship in the build.
+
+────────────────────────────────────────────────
+5. THE DESIGN — Variant C, faithfully
+────────────────────────────────────────────────
+Build the approved design: the dateline bar, the "This week's openings" masthead with
+an issue number, the two-column front page with the "In this week's issue" sidebar,
+entries filed under DATE headers, and the dark "Closing Soon" block.
+
+Obey design-language.md exactly:
+- Colours: accent #0e7a46 | base #ffffff | band #f4f4f5 | near-black #0b0b0b |
+  body gray #71717a | hairline #e4e4e7
+- Type: Newsreader (display) + IBM Plex Sans (body)
+- Headings: two-tone — clause 1 near-black, clause 2 gray
+- The home page is an EXPLORE surface: a working board, NOT a marketing landing page
+- BANNED: dark-by-default, glassmorphism, gradient decoration, icon-tile grids,
+  centered-hero-plus-three-cards, drop shadows on light cards
+- Icons: NO generic or stock icons. Thin-line inline SVG only where it aids scanning.
+  Any image that needs generating goes to a subagent (muse-media skill / image_generate).
+
+────────────────────────────────────────────────
+6. EXTENSIBILITY (required)
+────────────────────────────────────────────────
+Adding a new listing type (news, fellowships, meetups, competitions) must be a
+new Scout lane + a new enum value/field — NOT a rewrite of the core.
+Design the Prisma schema, the category map, and the API validation so a new category
+is a data change, not code surgery. Explain how in your report.
+
+────────────────────────────────────────────────
+7. HOW TO WORK
+────────────────────────────────────────────────
+You have the dynamic-workflow skill — load it with skill_view(name="dynamic-workflow").
+Use plan-in-code fan-outs for the parallelizable work (schema, API, pages, components).
+Set a goal, work in waves, and commit per verified step (locally, do not push).
+
+────────────────────────────────────────────────
+8. VERIFY — no claims without proof
+────────────────────────────────────────────────
+Run each of these and paste the REAL output in your report:
+1. npm install            -> completes
+2. npx prisma generate    -> succeeds
+3. npx prisma migrate deploy -> runs against the real Neon DB (this proves the DB works)
+4. npm run build          -> Astro build actually produces output
+5. API checks:
+   - POST /api/listings with a valid Bearer KLAWHUB_API_KEY and a valid body -> 201, row created
+   - POST with a wrong key -> 401
+   - POST with a malformed body -> 400
+
+If a step fails, report the REAL error. An honest blocker beats an invented success.
+Never report success for something you did not actually run.
+
+────────────────────────────────────────────────
+9. REPORT BACK
+────────────────────────────────────────────────
+- What you built + the file tree of site/
+- The real, pasted output of the build and migration commands
+- The Content API as implemented: fields, validation rules, status codes
+- The Prisma schema
+- How extensibility works (walk through adding a new category)
+- Exactly what the human must do next (env vars to confirm, Vercel deploy step)
