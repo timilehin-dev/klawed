@@ -25,7 +25,7 @@ const href = `/listings/${listing.slug}`;
 const category = toKebab(listing.category);
 ---
 
-<a class="entry" href={href}>
+<a class="entry" href={href} data-created-at={listing.createdAt.toISOString()}>
   <span class="entry-stamp tabular">
     {formatDayMonth(listing.createdAt)}
     <br />
@@ -67,6 +67,43 @@ const category = toKebab(listing.category);
   .entry:hover {
     transform: translateY(-2px);
     border-color: var(--ink-2);
+  }
+
+  /* "Just filed" shimmer — a one-shot ~600ms light pass along the left accent edge */
+  .entry-shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+  .entry-shimmer::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--accent);
+    animation: shimmer-sweep 600ms var(--ease) both;
+  }
+  @keyframes shimmer-sweep {
+    from {
+      opacity: 0;
+      transform: scaleY(0);
+    }
+    30% {
+      opacity: 1;
+      transform: scaleY(1);
+    }
+    to {
+      opacity: 0;
+      transform: scaleY(1);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .entry-shimmer::before {
+      animation: none;
+      opacity: 1;
+      transform: none;
+    }
   }
 
   /* ---- the filing stamp ---- */

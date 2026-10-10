@@ -1,0 +1,132 @@
+---
+/**
+ * WireTicker.astro — the dateline freshness marquee.
+ *
+ * A subtle horizontal scroll of recently-filed listings in the top dateline
+ * bar. Data comes from the board's live listings (most recent, non-expired)
+ * — no hardcoded rows. When the board is empty, shows a calm static line.
+ *
+ * Slow, smooth horizontal scroll (~50s loop), pauses on hover, fully disabled
+ * under prefers-reduced-motion (becomes a static, non-animated line).
+ */
+import type { TickerItem } from '../lib/listings';
+
+interface Props {
+  items: TickerItem[];
+}
+
+const { items } = Astro.props;
+---
+
+<div class="ticker" aria-hidden="true">
+  <div class="ticker-track">
+    {
+      items.length > 0 ? (
+        // Duplicate the list for a seamless loop
+        <>
+          {items.map((item) => (
+            <span class="ticker-item">
+              <span class="ticker-time tabular">{item.time}</span>
+              <span class="ticker-org">{item.org}</span>
+              <span class="ticker-cat">{item.category}</span>
+              <span class="ticker-days">
+                {item.daysLeft !== null
+                  ? `${item.daysLeft} ${item.daysLeft === 1 ? 'day' : 'days'} left`
+                  : 'rolling'}
+              </span>
+            </span>
+          ))}
+          {items.map((item) => (
+            <span class="ticker-item">
+              <span class="ticker-time tabular">{item.time}</span>
+              <span class="ticker-org">{item.org}</span>
+              <span class="ticker-cat">{item.category}</span>
+              <span class="ticker-days">
+                {item.daysLeft !== null
+                  ? `${item.daysLeft} ${item.daysLeft === 1 ? 'day' : 'days'} left`
+                  : 'rolling'}
+              </span>
+            </span>
+          ))}
+        </>
+      ) : (
+        <span class="ticker-item ticker-empty">The wire is live — next filing soon.</span>
+      )
+    }
+  </div>
+</div>
+
+<style>
+  .ticker {
+    overflow: hidden;
+    flex: 1;
+    min-width: 0;
+    mask-image: linear-gradient(to right, transparent, black 4%, black 96%, transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 4%, black 96%, transparent);
+  }
+
+  .ticker-track {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-6);
+    white-space: nowrap;
+    animation: ticker-scroll 50s linear infinite;
+    will-change: transform;
+  }
+
+  .ticker:hover .ticker-track {
+    animation-play-state: paused;
+  }
+
+  .ticker-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--body);
+    flex: none;
+  }
+
+  .ticker-time {
+    color: var(--body-2);
+    font-weight: 500;
+  }
+
+  .ticker-org {
+    color: var(--ink-2);
+    font-weight: 500;
+  }
+
+  .ticker-cat {
+    color: var(--body);
+  }
+
+  .ticker-days {
+    color: var(--body);
+  }
+
+  .ticker-empty {
+    color: var(--body);
+  }
+
+  @keyframes ticker-scroll {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ticker-track {
+      animation: none;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .ticker {
+      display: none;
+    }
+  }
+</style>

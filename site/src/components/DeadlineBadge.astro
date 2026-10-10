@@ -38,9 +38,10 @@ const label =
         : 'Rolling';
 
 const counted = state === 'closing' || state === 'today';
+const breathe = state === 'closing' && days <= 2;
 ---
 
-<span class:list={['badge', `badge-${state}`]}>
+<span class:list={['badge', `badge-${state}`, breathe && 'badge-breathe']}>
   {counted && <Clock />}
   <span class:list={[counted && 'tabular']}>{label}</span>
 </span>
@@ -85,6 +86,27 @@ const counted = state === 'closing' || state === 'today';
     background: var(--closing-bg);
     border-color: var(--closing-border);
     color: var(--closing-fg);
+  }
+
+  /* Within 48h — gentle opacity pulse (a slow, calm 2s ease-in-out breathe). */
+  .badge-closing.badge-breathe {
+    animation: badge-breathe 2s ease-in-out infinite;
+  }
+
+  @keyframes badge-breathe {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.75;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .badge-closing.badge-breathe {
+      animation: none;
+    }
   }
 
   /* Within the day — near-black, the loudest of the four. */

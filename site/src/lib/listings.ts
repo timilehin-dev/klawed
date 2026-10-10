@@ -13,7 +13,7 @@
 
 import type { Prisma } from '@prisma/client';
 import { getPrisma } from './prisma';
-import { isExpired } from './format';
+import { isExpired, formatFilingTime } from './format';
 import { CATEGORIES, REGIONS, toSnake, toKebab, isRegion } from './category-map';
 
 /** The display shape every component consumes. */
@@ -268,4 +268,37 @@ export function frontPage(board: Board, limit: number): ListingView[] {
     if (picks.length >= limit) break;
   }
   return picks;
+}
+
+/** One item in the wire ticker. */
+export interface TickerItem {
+  /** Filing time in WAT, e.g. "14:32". */
+  time: string;
+  /** Organisation name. */
+  org: string;
+  /** Category kebab. */
+  category: string;
+  /** Whole days left, or null for rolling. */
+  daysLeft: number | null;
+}
+
+/**
+ * The most recent live listings, formatted for the wire ticker. Newest first,
+ * capped at `limit`. Returns an empty array when the board is empty — the
+ * ticker renders its calm static line in that case.
+ */
+export function getTickerItems(board: Board, now: Date, limit = 8): TickerItem[] {
+  return board.live
+    .slice()
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    .slice(0, limit)
+    .map((l) => ({
+      time: formatFilingTime(l.createdAt),
+      org: l.org,
+      category: toKebab(l.category),
+      daysLeft:
+        l.deadline && !l.evergreen
+          ? Math.max(0, Math.ceil((l.deadline.getTime() - now.getTime()) / 86_400_000))
+          : null,
+    }));
 }

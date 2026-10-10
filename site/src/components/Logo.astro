@@ -1,0 +1,59 @@
+---
+/**
+ * Logo.astro — the Klawed brand mark.
+ *
+ * A claw mark that doubles as the letter "k": three clean angled strokes
+ * forming a claw, integrated with a "k" glyph. Editorial, geometric,
+ * confident — not a cartoon paw, not a generic icon.
+ *
+ * The vertical stem is the backbone of the "k"; the two diagonals are the
+ * claw strokes. Varying stroke weights (thick stem, thinner diagonals)
+ * create visual interest while keeping the mark readable at 16px.
+ *
+ * API:
+ *   <Logo size={32} tone="ink" />
+ *   <Logo size={24} tone="accent" />
+ *
+ * Props:
+ *   size  — rendered edge length in px (default 32)
+ *   tone  — "accent" (#0e7a46) or "ink" (#0b0b0b), default "ink"
+ */
+interface Props {
+  size?: number;
+  tone?: 'accent' | 'ink';
+}
+
+const { size = 32, tone = 'ink' } = Astro.props;
+---
+
+<svg
+  width={size}
+  height={size}
+  viewBox="0 0 32 32"
+  fill="none"
+  stroke="currentColor"
+  stroke-linecap="round"
+  aria-hidden="true"
+  focusable="false"
+  class:list={['logo', `logo-${tone}`]}
+>
+  <!-- Vertical stem — the backbone of the "k" -->
+  <path d="M9 3 V29" stroke-width="5" />
+  <!-- Upper claw stroke -->
+  <path d="M9 16 L27 5" stroke-width="3.5" />
+  <!-- Lower claw stroke -->
+  <path d="M9 16 L27 27" stroke-width="3.5" />
+</svg>
+
+<style>
+  .logo {
+    display: block;
+    flex: none;
+  }
+  .logo-accent {
+    color: var(--accent);
+  }
+  .logo-ink {
+    color: var(--ink);
+  }
+</style>

@@ -7,6 +7,7 @@
  * id="rules" is the anchor the footer links to (/about#rules).
  */
 import Base from '../layouts/Base.astro';
+import Logo from '../components/Logo.astro';
 import { siteUrl } from '../lib/env';
 
 const now = new Date();
@@ -17,6 +18,7 @@ const now = new Date();
     <article class="about-page">
       <header class="head">
         <div class="rule"></div>
+        <Logo size={48} tone="accent" />
         <h1>
           <span class="tone-1">What klawed</span> <span class="tone-2">actually is.</span>
         </h1>
@@ -89,6 +91,9 @@ const now = new Date();
     height: 2px;
     background: var(--ink);
     margin-bottom: var(--space-6);
+  }
+  .head :global(.logo) {
+    margin-bottom: var(--space-5);
   }
   .head h1 {
     font-family: var(--font-display);

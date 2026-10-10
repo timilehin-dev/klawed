@@ -25,7 +25,8 @@ import EmptyState from '../components/EmptyState.astro';
 import RefreshState from '../components/RefreshState.astro';
 import NewsletterSignup from '../components/NewsletterSignup.astro';
 import ArchiveStrip from '../components/ArchiveStrip.astro';
-import { loadBoard, frontPage } from '../lib/listings';
+import OnboardingStrip from '../components/OnboardingStrip.astro';
+import { loadBoard, frontPage, getTickerItems } from '../lib/listings';
 import { REGIONS } from '../lib/category-map';
 import {
   dayKey,
@@ -42,6 +43,7 @@ const board = await loadBoard(now);
 
 const sidebar = board.unreachable ? [] : frontPage(board, 5);
 const filedToday = board.live.filter((l) => dayKey(l.createdAt) === dayKey(now)).length;
+const tickerItems = board.unreachable ? [] : getTickerItems(board, now);
 
 /* Nigeria-first region groups, each holding its own distinct filing days. */
 const regionGroups = REGIONS.map((region) => {
@@ -68,6 +70,7 @@ const regionGroups = REGIONS.map((region) => {
   closingCount={board.closingSoon.length}
   surface="home"
   now={now}
+  tickerItems={tickerItems}
 >
   {
     board.unreachable ? (
@@ -160,6 +163,11 @@ const regionGroups = REGIONS.map((region) => {
               <Sidebar listings={sidebar} />
             </div>
           </header>
+        </div>
+
+        {/* ── 1b. first-visit onboarding ──────────────────────── */}
+        <div class="wrap">
+          <OnboardingStrip />
         </div>
 
         {/* ── 2. closing soon, first class ─────────────────────── */}
@@ -365,3 +373,38 @@ const regionGroups = REGIONS.map((region) => {
     }
   }
 </style>
+
+<script>
+  // "Just filed" shimmer — mark entries filed since the visitor's last visit.
+  // One-shot only, never loops. No user data stored beyond a timestamp.
+  (() => {
+    const KEY = 'klawed_last_visit';
+    const now = new Date();
+
+    let lastVisit: number | null = null;
+    try {
+      const stored = localStorage.getItem(KEY);
+      if (stored) lastVisit = parseInt(stored, 10);
+    } catch {
+      // localStorage unavailable — skip
+    }
+
+    // Update the stored timestamp
+    try {
+      localStorage.setItem(KEY, String(now.getTime()));
+    } catch {
+      // ignore
+    }
+
+    if (lastVisit === null) return;
+
+    // Mark entries filed since last visit
+    const entries = document.querySelectorAll('.entry[data-created-at]');
+    entries.forEach((el) => {
+      const createdAt = new Date(el.getAttribute('data-created-at') || '');
+      if (createdAt.getTime() > lastVisit) {
+        el.classList.add('entry-shimmer');
+      }
+    });
+  })();
+</script>

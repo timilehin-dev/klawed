@@ -18,6 +18,9 @@ import {
   plural,
 } from '../lib/format';
 import { siteUrl } from '../lib/env';
+import Logo from '../components/Logo.astro';
+import WireTicker from '../components/WireTicker.astro';
+import type { TickerItem } from '../lib/listings';
 
 interface Props {
   title: string;
@@ -32,6 +35,8 @@ interface Props {
   surface?: string;
   /** The date this page was compiled — injectable so pages render one instant. */
   now?: Date;
+  /** Ticker items for the dateline marquee. */
+  tickerItems?: TickerItem[];
 }
 
 const {
@@ -42,6 +47,7 @@ const {
   closingCount = 0,
   surface = 'home',
   now = new Date(),
+  tickerItems = [],
 } = Astro.props;
 
 const origin = siteUrl();
@@ -76,6 +82,11 @@ const categoryLinks = CATEGORIES.map((c) => ({
     <meta property="og:description" content={escapeAttr(description)} />
     <meta property="og:url" content={canonical} />
     <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   </head>
 
   <body>
@@ -89,6 +100,7 @@ const categoryLinks = CATEGORIES.map((c) => ({
             class="dateline-sep">·</span
           >Lagos, WAT</span
         >
+        <WireTicker items={tickerItems} />
         <span class="dateline-right tabular" aria-live="polite">
           {formatDatelineDate(now)} · {formatWatTime(now)}
           {
@@ -104,7 +116,8 @@ const categoryLinks = CATEGORIES.map((c) => ({
     <div class="topbar">
       <div class="wrap topbar-in">
         <a class="wordmark" href="/">
-          klawhub<span class="wordmark-tag">opportunities, klawed first</span>
+          <Logo size={28} tone="ink" />
+          <span class="wordmark-text">klawhub<span class="wordmark-tag">opportunities, klawed first</span></span>
         </a>
 
         <nav class="chips" aria-label="Filter by category">
@@ -157,7 +170,7 @@ const categoryLinks = CATEGORIES.map((c) => ({
     <footer>
       <div class="wrap foot">
         <div class="foot-brand">
-          <p class="foot-word">klawhub</p>
+          <p class="foot-word"><Logo size={24} tone="ink" /> klawhub</p>
           <div class="foot-rule"></div>
           <p class="foot-tag">
             The wire, filed from Lagos. Written by a bot, approved by a person.
@@ -259,6 +272,11 @@ const categoryLinks = CATEGORIES.map((c) => ({
     letter-spacing: -0.01em;
     flex: none;
     line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .wordmark-text {
     display: inline-flex;
     align-items: baseline;
     gap: 8px;
@@ -397,6 +415,9 @@ const categoryLinks = CATEGORIES.map((c) => ({
     font-weight: 600;
     color: var(--ink);
     line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
   }
   .foot-rule {
     width: 32px;

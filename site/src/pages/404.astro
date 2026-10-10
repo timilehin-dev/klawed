@@ -4,6 +4,7 @@
  * no error codes in the copy.
  */
 import Base from '../layouts/Base.astro';
+import Logo from '../components/Logo.astro';
 import { siteUrl } from '../lib/env';
 
 const now = new Date();
@@ -13,6 +14,7 @@ const now = new Date();
   <div class="wrap">
     <section class="nf">
       <div class="rule"></div>
+      <Logo size={48} tone="accent" />
       <p class="eyebrow">Off the wire</p>
       <h1 class="section-title">
         <span class="tone-1">Nothing here</span> <span class="tone-2">under that address.</span>
@@ -39,6 +41,9 @@ const now = new Date();
   .nf {
     padding: var(--space-10) 0 var(--space-6);
     max-width: 62ch;
+  }
+  .nf :global(.logo) {
+    margin-bottom: var(--space-5);
   }
   .rule {
     height: 2px;

@@ -1,0 +1,186 @@
+---
+/**
+ * OnboardingStrip.astro — first-visit "How the Wire Works" reveal.
+ *
+ * A quiet 3-step strip shown once to first-time visitors (localStorage flag):
+ * "A bot hunts → A person checks → It gets filed." Three short lines with the
+ * claw mark as the separator. Fades in gently, dismissable, never reappears
+ * once dismissed or seen. Respects prefers-reduced-motion (shows instantly,
+ * static).
+ */
+---
+
+<div class="onboarding" id="onboarding-strip" role="region" aria-label="How the wire works">
+  <div class="onboarding-inner">
+    <div class="onboarding-steps">
+      <div class="onboarding-step">
+        <span class="onboarding-num">1</span>
+        <span class="onboarding-text">A bot hunts</span>
+      </div>
+      <svg class="onboarding-sep" width="16" height="16" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-linecap="round" aria-hidden="true" focusable="false">
+        <path d="M9 3 V29" stroke-width="5" />
+        <path d="M9 16 L27 5" stroke-width="3.5" />
+        <path d="M9 16 L27 27" stroke-width="3.5" />
+      </svg>
+      <div class="onboarding-step">
+        <span class="onboarding-num">2</span>
+        <span class="onboarding-text">A person checks</span>
+      </div>
+      <svg class="onboarding-sep" width="16" height="16" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-linecap="round" aria-hidden="true" focusable="false">
+        <path d="M9 3 V29" stroke-width="5" />
+        <path d="M9 16 L27 5" stroke-width="3.5" />
+        <path d="M9 16 L27 27" stroke-width="3.5" />
+      </svg>
+      <div class="onboarding-step">
+        <span class="onboarding-num">3</span>
+        <span class="onboarding-text">It gets filed</span>
+      </div>
+    </div>
+    <button class="onboarding-dismiss" id="onboarding-dismiss" aria-label="Dismiss">×</button>
+  </div>
+</div>
+
+<script>
+  (() => {
+    const KEY = 'klawed_onboarding_seen';
+    const strip = document.getElementById('onboarding-strip');
+    const dismissBtn = document.getElementById('onboarding-dismiss');
+    if (!strip || !dismissBtn) return;
+
+    // Check if already seen
+    let seen = false;
+    try {
+      seen = localStorage.getItem(KEY) === '1';
+    } catch {
+      // localStorage unavailable — show it
+    }
+
+    if (seen) {
+      strip.style.display = 'none';
+      return;
+    }
+
+    // Mark as seen and hide after a delay or on dismiss
+    const markSeen = () => {
+      try {
+        localStorage.setItem(KEY, '1');
+      } catch {
+        // ignore
+      }
+      strip.style.display = 'none';
+    };
+
+    dismissBtn.addEventListener('click', markSeen);
+
+    // Auto-hide after 12 seconds
+    setTimeout(markSeen, 12000);
+  })();
+</script>
+
+<style>
+  .onboarding {
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-card);
+    background: var(--band);
+    padding: var(--space-4) var(--space-5);
+    margin-bottom: var(--space-6);
+    animation: onboarding-fade-in 600ms var(--ease) both;
+  }
+
+  .onboarding-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+  }
+
+  .onboarding-steps {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+  }
+
+  .onboarding-step {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .onboarding-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: var(--white);
+    font-size: 11px;
+    font-weight: 600;
+    flex: none;
+  }
+
+  .onboarding-text {
+    font-size: var(--text-meta);
+    color: var(--ink-2);
+    font-weight: 500;
+  }
+
+  .onboarding-sep {
+    color: var(--accent);
+    flex: none;
+  }
+
+  .onboarding-dismiss {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-pill);
+    background: var(--base);
+    color: var(--body);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    flex: none;
+    transition:
+      background var(--dur) var(--ease),
+      color var(--dur) var(--ease),
+      border-color var(--dur) var(--ease);
+  }
+
+  .onboarding-dismiss:hover {
+    background: var(--band);
+    color: var(--ink);
+    border-color: var(--body);
+  }
+
+  @keyframes onboarding-fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .onboarding {
+      animation: none;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .onboarding-steps {
+      gap: var(--space-2);
+    }
+    .onboarding-sep {
+      display: none;
+    }
+  }
+</style>
