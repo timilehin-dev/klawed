@@ -8,7 +8,15 @@
 
 set -u
 BASE="${1:-http://localhost:4321}"
-KEY="$(grep -m1 '^KLAWHUB_API_KEY=' /c/Users/HP/klaw/.env | cut -d= -f2- | tr -d '"\r')"
+# The key comes from the environment, never from a file this script names.
+# Keeping the path out of the repo means the script is portable (CI, another
+# machine) and publishes nothing about where secrets live on this one.
+#   export KLAWHUB_API_KEY=... && bash scripts/api-endpoints-test.sh
+KEY="${KLAWHUB_API_KEY:-}"
+if [ -z "$KEY" ]; then
+  echo "KLAWHUB_API_KEY is not set. Export it before running this script." >&2
+  exit 2
+fi
 PASS=0; FAIL=0
 TMP="C:/Users/HP/AppData/Local/hermes/profiles/builder/cache/scratch/apitest"
 mkdir -p "$TMP"
@@ -76,7 +84,7 @@ fi
 
 hr "3. PATCH with a bad key -> 401"
 CODE=$(curl -s -m 90 -o /dev/null -w '%{http_code}' -X PATCH "$BASE/api/listings/$ID" \
-  -H "x-api-key: wrong-key-abc123" -H 'content-type: application/json' -d '{"summary":"hijacked"}')
+  -H "x-api-key: not-the-real-key" -H 'content-type: application/json' -d '{"summary":"hijacked"}')
 check "PATCH bad key" 401 "$CODE"
 
 hr "4. PATCH a nonexistent id -> 404"
@@ -95,7 +103,7 @@ check "PATCH evergreen/deadline code" "bad_deadline" "$ERR"
 
 hr "5b. DELETE with a bad key -> 401 (auth on every method)"
 CODE=$(curl -s -m 90 -o /dev/null -w '%{http_code}' -X DELETE "$BASE/api/listings/$ID" \
-  -H "x-api-key: wrong-key-abc123")
+  -H "x-api-key: not-the-real-key")
 check "DELETE bad key" 401 "$CODE"
 
 hr "5c. DELETE an unknown id -> 404"
@@ -175,7 +183,7 @@ check "DELETE again (now unknown)" 404 "$CODE"
 
 hr "8. Auth failures carry no leakage, and headers are set"
 RESP=$(curl -s -m 90 -D "$TMP/hdr" -o "$TMP/body" -X PATCH "$BASE/api/listings/$ID" \
-  -H "x-api-key: wrong-key-abc123" -H 'content-type: application/json' -d '{"summary":"x"}')
+  -H "x-api-key: not-the-real-key" -H 'content-type: application/json' -d '{"summary":"x"}')
 BODY=$(cat "$TMP/body")
 if echo "$BODY" | grep -q "$KEY"; then
   echo "  FAIL  key echoed in an error body"; FAIL=$((FAIL+1))
