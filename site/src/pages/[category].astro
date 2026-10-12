@@ -21,7 +21,7 @@ import DayHeader from '../components/DayHeader.astro';
 import EmptyState from '../components/EmptyState.astro';
 import RefreshState from '../components/RefreshState.astro';
 import ArchiveStrip from '../components/ArchiveStrip.astro';
-import { loadCategory, loadRegion } from '../lib/listings';
+import { loadCategory, loadRegion, loadCounts } from '../lib/listings';
 import { CATEGORIES, REGIONS, isRegion } from '../lib/category-map';
 import { formatLongDate, dayKey } from '../lib/format';
 
@@ -38,6 +38,11 @@ if (!def && !regionDesk) {
 /* One instant for the whole render. */
 const now = new Date();
 const board = regionDesk ? await loadRegion(slug!, now) : await loadCategory(def!.kebab, now);
+
+// The chip bar is global chrome and must describe the WHOLE board on every page
+// — design-language §5.2. Reading these off this page's filtered board is what
+// made /jobs read "All 2" and "closing soon 0" against the homepage's 59 and 3.
+const boardCounts = await loadCounts(now);
 
 const count = board.total;
 
@@ -93,9 +98,9 @@ const regionGroups = (regionDesk ? [slug!] : REGIONS).map((region) => {
 <Base
   title={`${deskName} — klawhub`}
   description="Open opportunities for builders, filed by day. Every listing carries a direct link, a real deadline and stated eligibility."
-  total={count}
-  counts={board.counts}
-  closingCount={board.closingSoon.length}
+  total={boardCounts.total}
+  counts={boardCounts.byCategory}
+  closingCount={boardCounts.closingSoon}
   surface={slug}
   now={now}
 >

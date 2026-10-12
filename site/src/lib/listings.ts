@@ -150,6 +150,69 @@ export async function loadBoard(now: Date): Promise<Board> {
   return { live, closingSoon, archive, counts, total: live.length, unreachable: false };
 }
 
+/** Board-wide counts for the global chrome: every category, the total, and the
+ *  closing-soon figure. One shape so a page can never supply a partial set. */
+export interface BoardCounts {
+  /** Live count per public category slug. Every key present, zero-filled. */
+  byCategory: Record<string, number>;
+  /** Total live listings across all categories. */
+  total: number;
+  /** Live listings closing within seven days, board-wide. */
+  closingSoon: number;
+}
+
+/**
+ * Board-wide counts for the global chrome.
+ *
+ * The chip bar is exactly that — global. design-language §5.2 says each chip
+ * "shows its live count", and the "All" and "closing soon" chips sit in the same
+ * bar, so they must describe the whole board too, not the page you happen to be
+ * on. Sourcing them from a page's filtered board is what made /jobs read
+ * "All 2" and "closing soon 0" while the homepage read "All 59" and "3".
+ *
+ * One query, selecting only the columns the expiry and category rules need.
+ * Returns an all-zero map (never a partial one) when the DB is unreachable, so
+ * the bar renders a consistent shape instead of a mix of numbers and zeros.
+ */
+export async function loadCounts(now: Date): Promise<BoardCounts> {
+  const byCategory: Record<string, number> = Object.fromEntries(
+    CATEGORIES.map((c) => [c.kebab, 0]),
+  );
+  const empty: BoardCounts = { byCategory, total: 0, closingSoon: 0 };
+
+  const prisma = getPrisma();
+  if (!prisma) return empty;
+
+  let rows;
+  try {
+    rows = await prisma.listing.findMany({
+      where: LIVE_WHERE,
+      select: { category: true, deadline: true, evergreen: true },
+    });
+  } catch {
+    return empty;
+  }
+
+  let total = 0;
+  let closingSoon = 0;
+  for (const row of rows) {
+    // Same render-time expiry rule as the board itself, so a chip never counts a
+    // listing the feed is not showing.
+    if (isExpired(row.deadline, row.evergreen, now)) continue;
+
+    const kebab = toKebab(row.category);
+    if (kebab in byCategory) byCategory[kebab] += 1;
+    total += 1;
+
+    if (row.deadline && !row.evergreen) {
+      const ms = row.deadline.getTime() - now.getTime();
+      if (ms > 0 && ms <= 7 * 86_400_000) closingSoon += 1;
+    }
+  }
+
+  return { byCategory, total, closingSoon };
+}
+
 /**
  * Listings for one category page. `category` is the public kebab slug.
  */
