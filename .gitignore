@@ -34,6 +34,10 @@ quarantine/
 # the approved design variant).
 docs/BUILD-HANDOFF.md
 docs/builder-prompt.txt
+docs/scout-prompt.txt
+docs/verifier-prompt.txt
+docs/augment-prompt.txt
+scripts/pull-vercel-env.sh
 AGENTS.md
 PROJECT.md
 
