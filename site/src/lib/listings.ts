@@ -28,6 +28,8 @@ export interface ListingView {
   eligibility: string;
   link: string;
   region: string;
+  /** 'live' | 'expired' | 'draft'. Drives the live/archive partition. */
+  status: string;
   summary: string;
   createdAt: Date;
 }
@@ -60,7 +62,17 @@ export function compareListings(a: ListingView, b: ListingView): number {
   return b.createdAt.getTime() - a.createdAt.getTime();
 }
 
-function toView(row: Prisma.ListingGetPayload<Record<string, never>>): ListingView {
+/**
+ * A row as the read paths select it.
+ *
+ * Typed loosely on purpose: the three queries (board, category, region) each
+ * run the same `SELECT`, and Prisma infers their payload as a distinct nominal
+ * type per call site — which it then refuses to unify at `rows.map(toView)`.
+ * Asserting a single shape from `SELECT` keeps one mapper for all three.
+ */
+type SelectedRow = Prisma.ListingGetPayload<{ select: typeof SELECT }>;
+
+function toView(row: SelectedRow): ListingView {
   return {
     id: row.id,
     slug: row.slug,
@@ -72,6 +84,7 @@ function toView(row: Prisma.ListingGetPayload<Record<string, never>>): ListingVi
     eligibility: row.eligibility,
     link: row.link,
     region: row.region as string,
+    status: row.status,
     summary: row.summary,
     createdAt: row.createdAt,
   };
@@ -88,12 +101,40 @@ const SELECT = {
   eligibility: true,
   link: true,
   region: true,
+  status: true,
   summary: true,
   createdAt: true,
 } satisfies Prisma.ListingSelect;
 
-/** Live rows only — the render-time expiry filter, not a destructive delete. */
-const LIVE_WHERE: Prisma.ListingWhereInput = { status: 'live' };
+/** Rows that appear anywhere on the board: live, plus already-expired ones
+ *  (which render in the archive). `draft` is excluded — nothing surfaces a draft. */
+const VISIBLE_WHERE: Prisma.ListingWhereInput = { status: { in: ['live', 'expired'] } };
+
+/**
+ * Split loaded rows into the live surfaces and the archive.
+ *
+ * Two independent things put a listing in the archive, and both matter:
+ *   - `status = 'expired'` — set deliberately through the Content API when a
+ *     Verifier or an Editor pulls a listing (deadline passed, role filled, wrong
+ *     listing). It leaves the board at once, without waiting for the deadline.
+ *   - the deadline has passed — the render-time rule that has always applied.
+ *
+ * A listing never leaves the archive by being hidden: both are non-destructive
+ * (TRD §3), which is why this partition rather than a second query with
+ * `status: 'live'`. Querying live-only would drop API-expired rows from the
+ * archive entirely, since they are no longer 'live'.
+ */
+function partition(rows: Array<ReturnType<typeof toView>>, now: Date): { live: ListingView[]; archive: ListingView[] } {
+  const live: ListingView[] = [];
+  const archive: ListingView[] = [];
+  for (const v of rows) {
+    if (v.status === 'expired' || isExpired(v.deadline, v.evergreen, now)) archive.push(v);
+    else live.push(v);
+  }
+  live.sort(compareListings);
+  archive.sort((a, b) => (b.deadline?.getTime() ?? 0) - (a.deadline?.getTime() ?? 0));
+  return { live, archive };
+}
 
 const emptyBoard = (unreachable: boolean): Board => ({
   live: [],
@@ -114,7 +155,7 @@ export async function loadBoard(now: Date): Promise<Board> {
 
   let rows;
   try {
-    rows = await prisma.listing.findMany({ where: LIVE_WHERE, select: SELECT });
+    rows = await prisma.listing.findMany({ where: VISIBLE_WHERE, select: SELECT });
   } catch {
     // DB unreachable at render — TRD §9 graceful state.
     return emptyBoard(true);
@@ -122,16 +163,10 @@ export async function loadBoard(now: Date): Promise<Board> {
 
   const views = rows.map(toView);
 
-  // Render-time expiry: a past-deadline, non-evergreen listing leaves the live
-  // surfaces and lands in the archive. It is never hard-deleted (TRD §3).
-  const live: ListingView[] = [];
-  const archive: ListingView[] = [];
-  for (const v of views) {
-    if (isExpired(v.deadline, v.evergreen, now)) archive.push(v);
-    else live.push(v);
-  }
-  live.sort(compareListings);
-  archive.sort((a, b) => (b.deadline?.getTime() ?? 0) - (a.deadline?.getTime() ?? 0));
+  // Render-time expiry plus API-driven expiry: a past-deadline or deliberately
+  // expired listing leaves the live surfaces and lands in the archive. It is
+  // never hard-deleted (TRD §3).
+  const { live, archive } = partition(views, now);
 
   const closingSoon = live.filter((v) => {
     if (!v.deadline || v.evergreen) return false;
@@ -186,7 +221,7 @@ export async function loadCounts(now: Date): Promise<BoardCounts> {
   let rows;
   try {
     rows = await prisma.listing.findMany({
-      where: LIVE_WHERE,
+      where: { status: 'live' },
       select: { category: true, deadline: true, evergreen: true },
     });
   } catch {
@@ -226,7 +261,7 @@ export async function loadCategory(category: string, now: Date): Promise<Board> 
   let rows;
   try {
     rows = await prisma.listing.findMany({
-      where: { ...LIVE_WHERE, category: snake as never },
+      where: { ...VISIBLE_WHERE, category: snake as never },
       select: SELECT,
     });
   } catch {
@@ -234,14 +269,7 @@ export async function loadCategory(category: string, now: Date): Promise<Board> 
   }
 
   const views = rows.map(toView);
-  const live: ListingView[] = [];
-  const archive: ListingView[] = [];
-  for (const v of views) {
-    if (isExpired(v.deadline, v.evergreen, now)) archive.push(v);
-    else live.push(v);
-  }
-  live.sort(compareListings);
-  archive.sort((a, b) => (b.deadline?.getTime() ?? 0) - (a.deadline?.getTime() ?? 0));
+  const { live, archive } = partition(views, now);
 
   const closingSoon = live.filter((v) => {
     if (!v.deadline || v.evergreen) return false;
@@ -271,7 +299,7 @@ export async function loadRegion(region: string, now: Date): Promise<Board> {
   let rows;
   try {
     rows = await prisma.listing.findMany({
-      where: { ...LIVE_WHERE, region: region as never },
+      where: { ...VISIBLE_WHERE, region: region as never },
       select: SELECT,
     });
   } catch {
@@ -279,12 +307,7 @@ export async function loadRegion(region: string, now: Date): Promise<Board> {
   }
 
   const views = rows.map(toView);
-  const live: ListingView[] = [];
-  const archive: ListingView[] = [];
-  for (const v of views) {
-    if (isExpired(v.deadline, v.evergreen, now)) archive.push(v);
-    else live.push(v);
-  }
+  const { live, archive } = partition(views, now);
   // Already single-region, but keep the canonical comparator so the ordering
   // rule lives in one place.
   live.sort(compareListings);
@@ -306,9 +329,10 @@ export async function loadBySlug(slug: string, now: Date): Promise<ListingView |
     const row = await prisma.listing.findUnique({ where: { slug }, select: SELECT });
     if (!row) return null;
     const view = toView(row);
-    // A past-deadline listing is not a live surface; its detail page 404s into
-    // the archive rather than serving a stale Apply button.
-    if (isExpired(view.deadline, view.evergreen, now)) return null;
+    // Two independent reasons a listing is not a live surface: the deadline
+    // passed, or the Verifier expired it through the API. Either way the detail
+    // page 404s into the archive rather than serving a stale Apply button.
+    if (view.status === 'expired' || isExpired(view.deadline, view.evergreen, now)) return null;
     return view;
   } catch {
     return null;

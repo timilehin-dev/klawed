@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 import { registerTsResolver } from './ts-resolver.mjs';
 registerTsResolver();
 
-const { validateListing } = await import('../src/lib/validate-listing.ts');
+const { validateListing, validateListingPatch } = await import('../src/lib/validate-listing.ts');
 
 /** The fixed clock the suite reasons against: Friday 9 October 2026, noon UTC. */
 const NOW = new Date('2026-10-09T12:00:00.000Z');
@@ -363,5 +363,89 @@ test('a host-less link is rejected (bad_link), not accepted', () => {
   ]) {
     const r = validateListing({ ...base, link: good }, now);
     assert.ok(r.ok, `expected ${good} to pass, got ${r.ok ? 'ok' : r.failure.code}`);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// validateListingPatch — partial updates (PATCH /api/listings/:id)
+// ---------------------------------------------------------------------------
+
+test('patch accepts a single editable field', () => {
+  const r = validateListingPatch({ summary: 'Humanized summary.' });
+  assert.ok(r.ok);
+  if (r.ok) assert.deepEqual(r.value, { summary: 'Humanized summary.' });
+});
+
+test('patch accepts every editable field together', () => {
+  const r = validateListingPatch({
+    title: 'New Title',
+    org: 'NewOrg',
+    summary: 'S',
+    eligibility: 'E',
+    link: 'https://example.com/x',
+    category: 'remote',
+    region: 'africa',
+    deadline: '2030-01-01T00:00:00Z',
+    evergreen: false,
+  });
+  assert.ok(r.ok);
+});
+
+test('patch rejects an empty body', () => {
+  const r = validateListingPatch({});
+  assert.ok(!r.ok);
+  if (!r.ok) assert.equal(r.failure.code, 'empty_patch');
+});
+
+test('patch rejects immutable fields by name', () => {
+  for (const field of ['id', 'slug', 'createdAt', 'status']) {
+    const r = validateListingPatch({ [field]: 'x' });
+    assert.ok(!r.ok, `${field} must be rejected`);
+    if (!r.ok) {
+      assert.equal(r.failure.code, 'immutable_fields');
+      assert.deepEqual(r.failure.fields, [field]);
+    }
+  }
+});
+
+test('patch rejects unknown fields', () => {
+  const r = validateListingPatch({ hacked: true });
+  assert.ok(!r.ok);
+  if (!r.ok) assert.equal(r.failure.code, 'unknown_fields');
+});
+
+test('patch keeps the same bad_* vocabulary as create', () => {
+  const cases: Array<[Record<string, unknown>, string]> = [
+    [{ category: 'not-a-category' }, 'bad_category'],
+    [{ region: 'mars' }, 'bad_region'],
+    [{ link: 'http://insecure.example.com' }, 'bad_link'],
+    [{ deadline: 'not-a-date' }, 'bad_deadline'],
+    [{ title: 123 }, 'bad_field'],
+    [{ evergreen: 'yes' }, 'bad_field'],
+  ];
+  for (const [body, expected] of cases) {
+    const r = validateListingPatch(body);
+    assert.ok(!r.ok, JSON.stringify(body));
+    if (!r.ok) assert.equal(r.failure.code, expected, JSON.stringify(body));
+  }
+});
+
+test('patch allows deadline:null — the other half of flipping to evergreen', () => {
+  const r = validateListingPatch({ deadline: null });
+  assert.ok(r.ok);
+  if (r.ok) assert.equal(r.value.deadline, null);
+});
+
+test('patch trims string fields', () => {
+  const r = validateListingPatch({ summary: '  padded  ' });
+  assert.ok(r.ok);
+  if (r.ok) assert.equal(r.value.summary, 'padded');
+});
+
+test('patch rejects non-object bodies', () => {
+  for (const body of [null, 'string', 42, [1, 2]]) {
+    const r = validateListingPatch(body);
+    assert.ok(!r.ok);
+    if (!r.ok) assert.equal(r.failure.code, 'invalid_json');
   }
 });

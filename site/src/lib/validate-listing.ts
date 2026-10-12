@@ -42,6 +42,29 @@ export type ValidationResult =
   | { ok: true; value: ListingInput }
   | { ok: false; failure: ValidationFailure };
 
+/** Patch-specific failure codes, on top of the create-path vocabulary. */
+export interface PatchFailure {
+  code:
+    | 'invalid_json'
+    | 'missing_fields'
+    | 'bad_category'
+    | 'bad_region'
+    | 'bad_link'
+    | 'bad_deadline'
+    // PATCH adds: a field the client may never set, a field that does not
+    // exist, a type error on an editable field, and a body that changes nothing.
+    | 'immutable_fields'
+    | 'unknown_fields'
+    | 'bad_field'
+    | 'empty_patch';
+  /** The offending field names, where the code names them. */
+  fields?: string[];
+}
+
+export type PatchResult =
+  | { ok: true; value: Partial<ListingInput> }
+  | { ok: false; failure: PatchFailure };
+
 const REQUIRED_STRINGS = ['title', 'org', 'eligibility', 'link', 'summary'] as const;
 
 /**
@@ -142,6 +165,108 @@ export function validateListing(body: unknown, now: Date = new Date()): Validati
     value.createdAt = (b.createdAt as string).trim();
   }
   return { ok: true, value };
+}
+
+/**
+ * Validate a PARTIAL body for PATCH — only the fields present are checked.
+ *
+ * Same rules as `validateListing` per field (same failure codes, same `bad_*`
+ * vocabulary), but absence is legal: an editor rewriting one summary sends
+ * `{ "summary": "..." }` and nothing else.
+ *
+ * Two things this deliberately refuses, both about not letting a client set
+ * state it should not:
+ *   - An empty body is not a patch. `{}` would 200 without changing anything,
+ *     which reads like a silent failure to the caller.
+ *   - `id`, `slug`, `createdAt` and `status` are rejected outright here. Status
+ *     has exactly one legal transition and it goes through a dedicated shape in
+ *     the route (live -> expired, body exactly `{ "status": "expired" }`), so
+ *     accepting it in a general patch would open draft/live to the API.
+ *
+ * The evergreen/deadline invariant cannot be checked from the body alone — a
+ * patch that flips `evergreen` without restating `deadline` may still be valid
+ * or invalid depending on what is stored. The route checks it against the row.
+ */
+export function validateListingPatch(body: unknown): PatchResult {
+  if (typeof body !== 'object' || body === null || Array.isArray(body)) {
+    return { ok: false, failure: { code: 'invalid_json' } };
+  }
+  const b = body as Record<string, unknown>;
+
+  const FORBIDDEN = ['id', 'slug', 'createdAt', 'status'];
+  const forbiddenPresent = FORBIDDEN.filter((k) => k in b);
+  if (forbiddenPresent.length > 0) {
+    return { ok: false, failure: { code: 'immutable_fields', fields: forbiddenPresent } };
+  }
+
+  const patch: Partial<ListingInput> = {};
+  const keys = Object.keys(b);
+  if (keys.length === 0) {
+    return { ok: false, failure: { code: 'empty_patch' } };
+  }
+
+  // Only these four fields are editable; anything else is an unknown key.
+  const UNKNOWN = 'unknown_fields';
+  const unknown = keys.filter(
+    (k) => !['title', 'org', 'summary', 'eligibility', 'link', 'category', 'region', 'deadline', 'evergreen'].includes(k),
+  );
+  if (unknown.length > 0) {
+    return { ok: false, failure: { code: UNKNOWN, fields: unknown } };
+  }
+
+  // Trimmed string fields: a non-string is a type error, not an empty one.
+  const STRING_FIELDS: Array<keyof ListingInput> = ['title', 'org', 'summary', 'eligibility'];
+  for (const field of STRING_FIELDS) {
+    if (!(field in b)) continue;
+    const raw = b[field];
+    if (typeof raw !== 'string' || raw.trim().length === 0) {
+      return { ok: false, failure: { code: 'bad_field', fields: [field] } };
+    }
+    patch[field] = raw.trim() as never;
+  }
+
+  if ('category' in b) {
+    if (typeof b.category !== 'string' || !isCategoryKebab(b.category)) {
+      return { ok: false, failure: { code: 'bad_category' } };
+    }
+    patch.category = b.category;
+  }
+
+  if ('region' in b) {
+    if (typeof b.region !== 'string' || !isRegion(b.region)) {
+      return { ok: false, failure: { code: 'bad_region' } };
+    }
+    patch.region = b.region;
+  }
+
+  if ('link' in b) {
+    if (typeof b.link !== 'string' || !validLink(b.link.trim())) {
+      return { ok: false, failure: { code: 'bad_link' } };
+    }
+    patch.link = b.link.trim();
+  }
+
+  if ('deadline' in b) {
+    // null is legal here — clearing a deadline is the second half of flipping a
+    // listing to evergreen, and the row-level check below enforces the pairing.
+    const raw = b.deadline;
+    if (raw === null) {
+      patch.deadline = null;
+    } else if (typeof raw === 'string' && raw.trim().length > 0 && !Number.isNaN(new Date(raw).getTime())) {
+      patch.deadline = raw;
+    } else {
+      return { ok: false, failure: { code: 'bad_deadline' } };
+    }
+  }
+
+  if ('evergreen' in b) {
+    if (typeof b.evergreen !== 'boolean') {
+      return { ok: false, failure: { code: 'bad_field', fields: ['evergreen'] } };
+    }
+    patch.evergreen = b.evergreen;
+  }
+
+  return { ok: true, value: patch };
 }
 
 /**

@@ -30,67 +30,13 @@
 
 import crypto from 'node:crypto';
 import type { APIRoute } from 'astro';
-import { apiKey, hasApiKey } from '../../lib/env';
+import { apiResponse, authorized, presentedKey, readJsonBody, dbErrorSummary } from '../../lib/api-auth';
 import { validateListing } from '../../lib/validate-listing';
 import { toSnake } from '../../lib/category-map';
 import { makeSlug } from '../../lib/slug';
 import { getPrisma } from '../../lib/prisma';
 
 export const prerender = false;
-
-/** The three headers every response from this route carries. */
-function jsonResponse(body: unknown, status: number, extraHeaders?: Record<string, string>): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: {
-      'content-type': 'application/json; charset=utf-8',
-      'cache-control': 'no-store',
-      'x-content-type-options': 'nosniff',
-      ...extraHeaders,
-    },
-  });
-}
-
-/**
- * Constant-time key comparison (TRD §4).
- *
- * Both sides are SHA-256 digested before timingSafeEqual, so a mismatch in
- * length can never throw (timingSafeEqual requires equal-length buffers and a
- * throw would leak a timing side-channel anyway). With no key configured the
- * request is rejected outright — an unconfigured deployment is a closed door,
- * never an open one.
- */
-function authorized(headerValue: string | null | undefined): boolean {
-  const expected = apiKey();
-  if (!hasApiKey() || !expected) return false;
-  if (typeof headerValue !== 'string' || headerValue.length === 0) return false;
-  const a = crypto.createHash('sha256').update(expected, 'utf8').digest();
-  const b = crypto.createHash('sha256').update(headerValue, 'utf8').digest();
-  return crypto.timingSafeEqual(a, b);
-}
-
-/** Accept `x-api-key: <key>` (TRD §4) and `Authorization: Bearer <key>` (flow.md §2). */
-function presentedKey(request: Request): string | null {
-  const direct = request.headers.get('x-api-key');
-  if (direct && direct.trim().length > 0) return direct.trim();
-  const auth = request.headers.get('authorization');
-  if (auth) {
-    const match = /^Bearer\s+(.+)$/i.exec(auth.trim());
-    if (match && match[1].trim().length > 0) return match[1].trim();
-  }
-  return null;
-}
-
-/** Parse the body as JSON, returning a discriminated result. */
-async function readJsonBody(request: Request): Promise<{ ok: true; value: unknown } | { ok: false }> {
-  try {
-    const text = await request.text();
-    if (text.trim().length === 0) return { ok: false };
-    return { ok: true, value: JSON.parse(text) as unknown };
-  } catch {
-    return { ok: false };
-  }
-}
 
 /**
  * A collision-resistant id in Prisma's cuid() shape.
@@ -109,49 +55,29 @@ function createCuid(): string {
   return `c${time}${rand}${counter}`;
 }
 
-/**
- * A one-line, safe description of a database error for the server log.
- *
- * Deliberately narrow: the Prisma error code and the first line of the message.
- * Never the connection string, never the request body, never the API key. TRD §9
- * wants a diagnosable outage without turning Vercel's logs into a leak.
- */
-function dbErrorSummary(error: unknown): string {
-  if (error instanceof Error) {
-    // Prisma's validation errors carry `name` but no `code`, and their first
-    // line is the whole diagnosis ("Argument `slug` is missing."). A missing
-    // message would log a blank line, which is worse than no log at all.
-    const code = (error as { code?: string }).code;
-    const first = error.message.split('\n').filter((l) => l.trim().length > 0)[0]?.slice(0, 200);
-    if (!first) return code ?? error.name ?? 'unknown error';
-    return code ? `${code}: ${first}` : first;
-  }
-  return 'unknown error';
-}
-
 export const POST: APIRoute = async ({ request }) => {
   // --- auth: before anything else touches the body ---
   if (!authorized(presentedKey(request))) {
     // No detail about what was wrong (TRD §4). Nothing about the key is logged.
-    return jsonResponse({ error: 'unauthorized' }, 401);
+    return apiResponse({ error: 'unauthorized' }, 401);
   }
 
   // --- body ---
   const parsed = await readJsonBody(request);
-  if (!parsed.ok) return jsonResponse({ error: 'invalid_json' }, 400);
+  if (!parsed.ok) return apiResponse({ error: 'invalid_json' }, 400);
 
   const result = validateListing(parsed.value);
   if (!result.ok) {
     // Map the validator's failure codes one-for-one onto the TRD §4 table.
-    return jsonResponse({ error: result.failure.code, ...(result.failure.fields ? { fields: result.failure.fields } : {}) }, 400);
+    return apiResponse({ error: result.failure.code, ...(result.failure.fields ? { fields: result.failure.fields } : {}) }, 400);
   }
   const input = result.value;
 
   const categorySnake = toSnake(input.category);
-  if (!categorySnake) return jsonResponse({ error: 'bad_category' }, 400);
+  if (!categorySnake) return apiResponse({ error: 'bad_category' }, 400);
 
   const prisma = getPrisma();
-  if (!prisma) return jsonResponse({ error: 'db_unavailable' }, 503);
+  if (!prisma) return apiResponse({ error: 'db_unavailable' }, 503);
 
   // --- the optional client timestamp: a real date, and a plausible one ---
   // The validator passes createdAt through untouched (it is optional), so the
@@ -168,11 +94,11 @@ export const POST: APIRoute = async ({ request }) => {
   if (typeof input.createdAt === 'string' && input.createdAt.trim().length > 0) {
     const parsed = new Date(input.createdAt.trim());
     if (Number.isNaN(parsed.getTime())) {
-      return jsonResponse({ error: 'bad_created_at' }, 400);
+      return apiResponse({ error: 'bad_created_at' }, 400);
     }
     const skewMs = Math.abs(parsed.getTime() - createdAt.getTime());
     if (skewMs > 365 * 86_400_000) {
-      return jsonResponse({ error: 'bad_created_at' }, 400);
+      return apiResponse({ error: 'bad_created_at' }, 400);
     }
     createdAt = parsed;
   }
@@ -184,13 +110,13 @@ export const POST: APIRoute = async ({ request }) => {
       where: { link: input.link, status: 'live' },
       select: { id: true },
     });
-    if (existing) return jsonResponse({ error: 'duplicate' }, 409);
+    if (existing) return apiResponse({ error: 'duplicate' }, 409);
   } catch (error) {
     // The client gets a code, never a stack trace (TRD §9). The server log gets
     // the error code and message — enough to diagnose a DB outage, and never the
     // API key or the request body.
     console.error('[api/listings] duplicate check failed:', dbErrorSummary(error));
-    return jsonResponse({ error: 'db_unavailable' }, 503);
+    return apiResponse({ error: 'db_unavailable' }, 503);
   }
 
   // --- write, from the whitelist only ---
@@ -229,19 +155,19 @@ export const POST: APIRoute = async ({ request }) => {
     // still a clean 409 for the poster (TRD §4's idempotency contract), not a
     // 500 and not a duplicate row.
     if ((error as { code?: string }).code === 'P2002') {
-      return jsonResponse({ error: 'duplicate' }, 409);
+      return apiResponse({ error: 'duplicate' }, 409);
     }
     console.error('[api/listings] create failed:', dbErrorSummary(error));
-    return jsonResponse({ error: 'db_unavailable' }, 503);
+    return apiResponse({ error: 'db_unavailable' }, 503);
   }
 
-  return jsonResponse({ id: created.id, slug, status: 'live' }, 201);
+  return apiResponse({ id: created.id, slug, status: 'live' }, 201);
 };
 
 // Only POST is accepted (TRD §4). Astro 404s unmatched methods by default; the
 // explicit 405 + Allow header is the documented behaviour of the route.
 export const GET: APIRoute = async () =>
-  jsonResponse({ error: 'method_not_allowed' }, 405, { Allow: 'POST' });
+  apiResponse({ error: 'method_not_allowed' }, 405, { Allow: 'POST' });
 export const PUT: APIRoute = GET;
 export const PATCH: APIRoute = GET;
 export const DELETE: APIRoute = GET;
