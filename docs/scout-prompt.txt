@@ -56,7 +56,9 @@ the §Top20 list — the highest-value sources for a Nigeria-first audience.
   * Unroll shorteners (bit.ly, t.co) to the final landing page before recording a link.
 
 ## OUTPUT
-Write all findings to: C:\Users\HP\klaw\quarantine\raw\scout_2026-10-10.md
+Write all findings to: C:\Users\HP\klaw\quarantine\raw\scout_<TODAY>.md
+Use the actual run date in the filename (e.g. scout_2026-10-12.md) so runs never
+overwrite each other.
 Format — one block per item, grouped by category, like:
 
     ### [title]
